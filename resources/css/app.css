@@ -64,3 +64,89 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* ============================================================
+   GoldED Terminal — CGA palette + layout
+   ============================================================ */
+
+@font-face {
+    font-family: 'IBM VGA';
+    src: url('/fonts/WebPlus_IBM_VGA_8x16.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+/* CGA 16-colour palette — format: cga-FOREGROUND-BACKGROUND */
+.cga-black-lgrey    { color: #000000; background-color: #AAAAAA; }
+.cga-blue-lgrey     { color: #0000AA; background-color: #AAAAAA; }
+.cga-green-lgrey    { color: #00AA00; background-color: #AAAAAA; }
+.cga-cyan-lgrey     { color: #00AAAA; background-color: #AAAAAA; }
+.cga-red-lgrey      { color: #AA0000; background-color: #AAAAAA; }
+.cga-magenta-lgrey  { color: #AA00AA; background-color: #AAAAAA; }
+.cga-brown-lgrey    { color: #AA5500; background-color: #AAAAAA; }
+.cga-dgrey-lgrey    { color: #555555; background-color: #AAAAAA; }
+.cga-lblue-lgrey    { color: #5555FF; background-color: #AAAAAA; }
+.cga-lgreen-lgrey   { color: #55FF55; background-color: #AAAAAA; }
+.cga-lcyan-lgrey    { color: #55FFFF; background-color: #AAAAAA; }
+.cga-lred-lgrey     { color: #FF5555; background-color: #AAAAAA; }
+.cga-lmagenta-lgrey { color: #FF55FF; background-color: #AAAAAA; }
+.cga-yellow-lgrey   { color: #FFFF55; background-color: #AAAAAA; }
+.cga-white-lgrey    { color: #FFFFFF; background-color: #AAAAAA; }
+.cga-white-blue     { color: #FFFFFF; background-color: #0000AA; }
+.cga-lblue-blue     { color: #5555FF; background-color: #0000AA; }
+.cga-yellow-blue    { color: #FFFF55; background-color: #0000AA; }
+.cga-lgrey-blue     { color: #AAAAAA; background-color: #0000AA; }
+.cga-black-cyan     { color: #000000; background-color: #00AAAA; }
+.cga-white-red      { color: #FFFFFF; background-color: #AA0000; }
+
+/* Terminal chrome */
+.golded-body {
+    background-color: #111111;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    padding-top: 1rem;
+    min-height: 100vh;
+}
+
+.golded-shell {
+    outline: none;
+}
+
+.golded-pre {
+    font-family: 'IBM VGA', 'Courier New', monospace;
+    font-size: 16px;
+    line-height: 1.0;
+    margin: 0;
+    padding: 0;
+    white-space: pre;
+    overflow: hidden;
+    background-color: #AAAAAA;
+}
+
+/* Each row is a block-level span so backgrounds fill full width */
+.golded-row {
+    display: block;
+    background-color: #AAAAAA;
+    color: #000000;
+    width: 80ch;
+}
+
+.golded-row-status {
+    display: block;
+    background-color: #0000AA;
+    color: #FFFFFF;
+    width: 80ch;
+}
+
+/* Screen hint bar */
+.golded-hint {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #555555;
+    margin-top: 0.5rem;
+    text-align: center;
+    width: 80ch;
+}
