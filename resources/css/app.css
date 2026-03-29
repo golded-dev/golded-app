@@ -97,6 +97,7 @@ select:focus[data-flux-control] {
 .cga-lblue-blue     { color: #5555FF; background-color: #0000AA; }
 .cga-yellow-blue    { color: #FFFF55; background-color: #0000AA; }
 .cga-lgrey-blue     { color: #AAAAAA; background-color: #0000AA; }
+.cga-cyan-blue      { color: #00AAAA; background-color: #0000AA; }
 .cga-black-cyan     { color: #000000; background-color: #00AAAA; }
 .cga-white-red      { color: #FFFFFF; background-color: #AA0000; }
 

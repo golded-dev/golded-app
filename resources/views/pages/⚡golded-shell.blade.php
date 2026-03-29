@@ -72,7 +72,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         }
 
         if ($len < 78) {
-            $html .= str_repeat(' ', 78 - $len);
+            $html .= '<span class="' . $fillClass . '">' . str_repeat(' ', 78 - $len) . '</span>';
         }
 
         $html .= '<span class="' . $b . '">│</span>';
@@ -92,16 +92,27 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     }
 
     /**
-     * Top border: ┌─[title]──── section ──── info ─┐
+     * Top border. $brackets=true → ─[title] (area list style).
+     *             $brackets=false → ─ title ─ (message list / reader style).
      * title/info in RED, dashes/brackets in YELLOW.
      */
-    private function top(string $title, string $section, string $info): string
+    private function top(string $title, string $section, string $info, bool $brackets = true): string
     {
-        $inner = '─[' . $title . ']';     // e.g. "─[GoldED 3.0.1]"
-        $mid   = ' ' . $section . ' ';    // e.g. " Area List "
-        $right = ' ' . $info . ' ─';      // e.g. " 3 areas, 17 new ─"
+        $y = 'cga-yellow-lgrey';
+        $r = 'cga-red-lgrey';
 
-        $dashSpace = 78 // inner width (80 - 2 for ┌┐)
+        if ($brackets) {
+            $inner         = '─[' . $title . ']';
+            $titleSegments = [['─[', $y], [$title, $r], [']', $y]];
+        } else {
+            $inner         = '─ ' . $title . ' ─';
+            $titleSegments = [['─ ', $y], [$title, $r], [' ─', $y]];
+        }
+
+        $mid   = ' ' . $section . ' ';
+        $right = ' ' . $info . ' ─';
+
+        $dashSpace = 78
             - mb_strlen($inner)
             - mb_strlen($mid)
             - mb_strlen($right);
@@ -109,18 +120,18 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $leftDashes  = intdiv($dashSpace, 2);
         $rightDashes = $dashSpace - $leftDashes;
 
-        return $this->ln([
-            ['┌', 'cga-yellow-lgrey'],
-            ['─[', 'cga-yellow-lgrey'],
-            [$title, 'cga-red-lgrey'],
-            [']', 'cga-yellow-lgrey'],
-            [str_repeat('─', $leftDashes), 'cga-yellow-lgrey'],
-            [$mid, 'cga-red-lgrey'],
-            [str_repeat('─', $rightDashes), 'cga-yellow-lgrey'],
-            [' ', 'cga-yellow-lgrey'],
-            [$info, 'cga-red-lgrey'],
-            [' ─┐', 'cga-yellow-lgrey'],
-        ]);
+        return $this->ln(array_merge(
+            [['┌', $y]],
+            $titleSegments,
+            [
+                [str_repeat('─', $leftDashes), $y],
+                [$mid, $r],
+                [str_repeat('─', $rightDashes), $y],
+                [' ', $y],
+                [$info, $r],
+                [' ─┐', $y],
+            ]
+        ));
     }
 
     /** Status bar (row 24): WHITE@BLUE, centred context string */
@@ -152,13 +163,15 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->top('GoldED 3.0.1', 'Area List', '3 areas, 17 new');
 
-        // Column header
+        // Column header — columns must match data: num(4) desc(30) msgs(6) chg(1) new(6) sp(1) echo(16)
         $rows[] = $this->row([
-            ['  #', $b],
-            ['  Description                     ', $b],
-            ['    Msgs', $b],
-            ['     New', $b],
-            ['  EchoID        ', $b],
+            ['  # ', $b],                           // 4
+            ['Description                   ', $b], // 30
+            ['  Msgs', $b],                         // 6
+            [' ', $b],                              // 1 (chg col)
+            ['   New', $b],                         // 6
+            [' ', $b],                              // 1 (sp col)
+            ['EchoID          ', $b],               // 16
         ]);
 
         $rows[] = $this->sep();
@@ -167,7 +180,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $areas = [
             ['  1 ', 'Goldware Support              ', '   142', ' ', '    12', ' ', 'GOLDED          ', '   ', false],
             ['  2 ', 'FidoNet.General               ', '    89', ' ', '     5', ' ', 'FIDONET         ', '   ', false],
-            ['▶ 3 ', 'NetMail                       ', '    12', ' ', '     2', ' ', 'NETMAIL         ', '   ', true],
+            ['► 3 ', 'NetMail                       ', '    12', ' ', '     2', ' ', 'NETMAIL         ', '   ', true],
             ['  4 ', 'DK.Snak                       ', '    67', ' ', '     0', ' ', 'DK.SNAK         ', '   ', false],
             ['  5 ', 'OS2.General                   ', '    34', ' ', '     3', ' ', 'OS2.GEN         ', '   ', false],
             ['  6 ', 'THE_SAFE                      ', '     8', ' ', '     0', ' ', 'THE_SAFE        ', '   ', false],
@@ -201,26 +214,26 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows = [];
 
-        $rows[] = $this->top('NetMail', 'Message List', '12 msgs, 2 new');
+        $rows[] = $this->top('NetMail', 'Message List', '12 msgs, 2 new', false);
 
         $rows[] = $this->row([
             ['     #', $b],
             ['   ', $b],
             ['  From                ', $b],
             ['  Subject                       ', $b],
-            ['   Date', $b],
+            ['  Date', $b],
         ]);
 
         $rows[] = $this->sep();
 
-        // [num(6), tree(4), from(20), subj(32), date(8)]
+        // [num(6), tree(3), from(22), subj(32), date(11)]
         $msgs = [
-            ['     1', '   ', '  Bjarne Hansen       ', '  Re: GoldED 3.0 beta           ', '  12 Mar', false, false],
-            ['     2', '   ', '  Uffe Sorensen       ', '  Nodelist update               ', '  12 Mar', true,  false],
-            ['  ▶■ 3', '   ', '  Odinn Sorensen      ', '  Re: GoldED keybindings        ', '  13 Mar', false, true],
-            ['     4', ' └ ', '  Lars Jensen         ', '  Re: GoldED keybindings        ', '  13 Mar', false, false],
-            ['     5', ' └ ', '  Peter Froerup       ', '  Re: GoldED keybindings        ', '  14 Mar', false, false],
-            ['     6', '   ', '  Thomas Nielsen      ', '  New beta available?           ', '  14 Mar', true,  false],
+            ['     1', '   ', '  Bjarne Hansen       ', '  Re: GoldED 3.0 beta           ', '  12 Mar 94', false, false],
+            ['     2', '   ', '  Uffe Sorensen       ', '  Nodelist update               ', '  12 Mar 94', true,  false],
+            ['  ►  3', '   ', '  Odinn Sorensen      ', '  Re: GoldED keybindings        ', '  13 Mar 94', false, true],
+            ['     4', ' ├─', '  Lars Jensen         ', '  Re: GoldED keybindings        ', '  13 Mar 94', false, false],
+            ['     5', ' └─', '  Peter Froerup       ', '  Re: GoldED keybindings        ', '  14 Mar 94', false, false],
+            ['     6', '   ', '  Thomas Nielsen      ', '  New beta available?           ', '  14 Mar 94', true,  false],
         ];
 
         foreach ($msgs as [$num, $tree, $from, $subj, $date, $isUnread, $isSel]) {
@@ -253,7 +266,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows = [];
 
-        $rows[] = $this->top('[3] NetMail', '2:236/77', 'NETMAIL');
+        $rows[] = $this->top('[3] NetMail', '2:236/77', 'NETMAIL', false);
 
         $rows[] = $this->row([
             [' Msg: 3 of 12  -1 +4 *5', $b],
@@ -264,7 +277,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $rows[] = $this->row([[' To  : ', $b], ['Lars Jensen                            2:236/105    ', $n]]);
         $rows[] = $this->row([[' Subj: ', $b], ['Re: GoldED keybindings                               ', $n]]);
 
-        $rows[] = $this->sep($dg);
+        $rows[] = $this->sep();
 
         $body = [
             [' ', $n],
@@ -301,27 +314,25 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     private function editorScreen(): array
     {
         $y  = 'cga-yellow-lgrey';
+        $r  = 'cga-red-lgrey';
         $b  = 'cga-blue-lgrey';
-        $in = 'cga-white-blue';
         $n  = 'cga-black-lgrey';
         $q1 = 'cga-blue-lgrey';
 
         $rows = [];
 
-        // Row 0: custom top border for editor (no info on right)
-        $inner = ' Composing new message ';
-        $dashes = 78 - mb_strlen($inner) - 2; // -2 for ─ on each side of the inner
+        // Row 0: top border — same yellow-lgrey style as other screens, no right section
         $rows[] = $this->ln([
             ['┌─ ', $y],
-            ['Composing new message', $b],
+            ['Composing new message', $r],
             [' ' . str_repeat('─', 78 - 3 - 21 - 1) . '─┐', $y],
         ]);
 
-        // Editable header fields
-        $rows[] = $this->row([[' From : ', $b], ['Odinn Sorensen (2:236/77)', $in]], $in);
-        $rows[] = $this->row([[' To   : ', $b], ['Lars Jensen', $in]], $in);
-        $rows[] = $this->row([[' Subj : ', $b], ['Re: GoldED keybindings', $in]], $in);
-        $rows[] = $this->row([], $n);
+        // Header fields — same structure as reader: blue label, black value, lgrey fill
+        $rows[] = $this->row([[' From : ', $b], ['Odinn Sorensen (2:236/77)', $n]]);
+        $rows[] = $this->row([[' To   : ', $b], ['Lars Jensen', $n]]);
+        $rows[] = $this->row([[' Subj : ', $b], ['Re: GoldED keybindings', $n]]);
+        $rows[] = $this->row([[' Area : ', $b], ['NETMAIL', $n]]);
         $rows[] = $this->sep();
 
         $edit = [
