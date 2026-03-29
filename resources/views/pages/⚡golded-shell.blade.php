@@ -328,11 +328,12 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             [' ' . str_repeat('─', 78 - 3 - 21 - 1) . '─┐', $y],
         ]);
 
-        // Header fields — same structure as reader: blue label, black value, lgrey fill
+        // Row 1: date only (no Msg counter for new compose); right-aligned like reader
+        $rows[] = $this->row([[str_repeat(' ', 68) . '14 Mar 94 ', $b]]);
+        // Rows 2-4: editable fields (gehdre.cpp rows 2,3,4 — no Area field in original)
         $rows[] = $this->row([[' From : ', $b], ['Odinn Sorensen (2:236/77)', $n]]);
         $rows[] = $this->row([[' To   : ', $b], ['Lars Jensen', $n]]);
         $rows[] = $this->row([[' Subj : ', $b], ['Re: GoldED keybindings', $n]]);
-        $rows[] = $this->row([[' Area : ', $b], ['NETMAIL', $n]]);
         $rows[] = $this->sep();
 
         $edit = [

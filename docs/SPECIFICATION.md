@@ -257,7 +257,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 | `LIST_UNSENT` | MAGENTA | LGREY | Unsent message |
 | `LIST_UNSENT_SEL` | LMAGENTA | LGREY | Selected unsent |
 | `HEADER_LABEL` | BLUE | LGREY | Header field labels |
-| `HEADER_INPUT` | WHITE | BLUE | Editable header fields |
+| `HEADER_INPUT` | BLACK | LGREY | Editable header fields (same background as rest of header) |
 | `HEADER_BORDER` | YELLOW | LGREY | Window borders |
 | `HEADER_TITLE` | RED | LGREY | Window title text |
 | `STATUS_BAR` | WHITE | BLUE | Bottom status line |
@@ -335,12 +335,12 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 ┌─ NetMail ─────────────────── 12 messages, 2 new ─── 2:236/77 ─┐  [BORDER/TITLE=RED@LGREY]
 │      #      From            Subject                    Date    │  [HEADER_LABEL=BLUE@LGREY]
 ├────────────────────────────────────────────────────────────────┤
-│      1      Bjarne Hansen   Re: GoldED 3.0 beta        12 Mar  │  [LIST_NORMAL]
-│      2      Uffe Sorensen   Nodelist update             12 Mar  │  [LIST_UNREAD=BLUE@LGREY]
-│▶   ■ 3      Odinn Sorensen  Re: GoldED keybindings      13 Mar  │  [LIST_SELECTED=WHITE@BLUE]
-│      4   └  Lars Jensen     Re: GoldED keybindings      13 Mar  │
-│      5   └  Peter Froerup   Re: GoldED keybindings      14 Mar  │
-│      6      Thomas Nielsen  New beta available?          14 Mar  │  [LIST_UNREAD=BLUE@LGREY]
+│      1      Bjarne Hansen   Re: GoldED 3.0 beta       12 Mar 94 │  [LIST_NORMAL]
+│      2      Uffe Sorensen   Nodelist update            12 Mar 94 │  [LIST_UNREAD=BLUE@LGREY]
+│▶   ■ 3      Odinn Sorensen  Re: GoldED keybindings     13 Mar 94 │  [LIST_SELECTED=WHITE@BLUE]
+│      4   └  Lars Jensen     Re: GoldED keybindings     13 Mar 94 │
+│      5   └  Peter Froerup   Re: GoldED keybindings     14 Mar 94 │
+│      6      Thomas Nielsen  New beta available?         14 Mar 94 │  [LIST_UNREAD=BLUE@LGREY]
 │                                                                │
 │                                                                │
 │                                                                │
@@ -386,7 +386,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 │ From: Odinn Sorensen                      2:236/77             │
 │ To  : Lars Jensen                         2:236/105            │
 │ Subj: Re: GoldED keybindings                                   │
-├────────────────────────────────────────────────────────────────┤  [BORDER=DGREY@LGREY]
+├────────────────────────────────────────────────────────────────┤  [BORDER=YELLOW@LGREY]
 │                                                                │  [BODY_NORMAL=BLACK@LGREY]
 │ Lars Jensen wrote:                                             │
 │                                                                │
@@ -437,9 +437,10 @@ DISPHDRDATESET -20 20    → 20 chars from right edge for date
 ### 10.4 Editor Screen
 
 ```
-┌─ Composing new message ────────────────────────────────────── ─┐  [BORDER=YELLOW@LGREY]
-│ From : Odinn Sorensen (2:236/77)                               │  [HEADER_LABEL=BLUE@LGREY]
-│ To   : Lars Jensen                                             │  [HEADER_INPUT=WHITE@BLUE]
+┌─ Composing new message ────────────────────────────────────── ─┐  [BORDER=YELLOW@LGREY,TITLE=RED@LGREY]
+│                                                     14 Mar 94  │  [HEADER_LABEL=BLUE@LGREY]
+│ From : Odinn Sorensen (2:236/77)                               │  [HEADER_INPUT=BLACK@LGREY]
+│ To   : Lars Jensen                                             │
 │ Subj : Re: GoldED keybindings                                  │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │  [BODY_NORMAL=BLACK@LGREY]
@@ -467,13 +468,19 @@ DISPHDRDATESET -20 20    → 20 chars from right edge for date
 
 **Header row layout (rows 0–5):**
 
+Source: `geview.cpp` `GMsgHeaderView::Paint()` + `gehdre.cpp` `EditHeaderinfo()`.
+The header is the same shared component as the reader. Row 1 always comes from
+`geview.cpp` — in compose mode there is no message counter, so only the date is shown.
+Rows 2–4 are editable fields (`gehdre.cpp` `add_field()` calls at rows 2, 3, 4).
+There is **no Area field** in the original.
+
 | Row | Content |
 |-----|---------|
-| 0 | Top border with title |
-| 1 | `From : <name> (<address>)` |
-| 2 | `To   : <name>` |
-| 3 | `Subj : <subject>` |
-| 4 | (unused / file field for file attaches) |
+| 0 | Top border with title (`Composing new message`) |
+| 1 | Date (right-aligned; no Msg counter for new messages) |
+| 2 | `From : <name> (<address>)` |
+| 3 | `To   : <name>` |
+| 4 | `Subj : <subject>` |
 | 5 | Separator |
 
 **Edit buffer:**
