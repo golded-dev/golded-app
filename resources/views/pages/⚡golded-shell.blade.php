@@ -29,7 +29,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     #[Computed]
     public function areas(): \Illuminate\Database\Eloquent\Collection
     {
-        return Area::where('dataset_id', $this->datasetId ?? 0)->orderBy('sort_order')->get();
+        return Area::where('dataset_id', $this->datasetId ?? 0)->orderBy('sort_order')->orderBy('name')->get();
     }
 
     #[Computed]
@@ -63,6 +63,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             'ArrowRight', 'Enter' => $this->openArea(),
             default => null,
         };
+        $this->clampTopOffset($count);
     }
 
     private function handleMessagesKey(string $key): void
@@ -75,6 +76,17 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             'ArrowLeft', 'Escape' => $this->backToAreas(),
             default => null,
         };
+        $this->clampTopOffset($count);
+    }
+
+    private function clampTopOffset(int $count, int $window = 20): void
+    {
+        if ($this->selectionIndex < $this->topOffset) {
+            $this->topOffset = $this->selectionIndex;
+        } elseif ($this->selectionIndex >= $this->topOffset + $window) {
+            $this->topOffset = $this->selectionIndex - $window + 1;
+        }
+        $this->topOffset = max(0, min($this->topOffset, max(0, $count - $window)));
     }
 
     private function handleReaderKey(string $key): void
@@ -95,9 +107,10 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         if (! $area) {
             return;
         }
-        $this->areaId = $area->id;
+        $this->areaId         = $area->id;
         $this->selectionIndex = 0;
-        $this->screen = 'messages';
+        $this->topOffset      = 0;
+        $this->screen         = 'messages';
     }
 
     private function openMessage(): void
@@ -302,12 +315,13 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->sep();
 
-        $areas = $this->areas;
+        $visible = $this->areas->slice($this->topOffset, 20);
 
-        foreach ($areas->values() as $i => $area) {
-            $selected = $i === $this->selectionIndex;
+        foreach ($visible->values() as $i => $area) {
+            $absIndex = $this->topOffset + $i;
+            $selected = $absIndex === $this->selectionIndex;
             $c        = $selected ? $s : $n;
-            $num      = ($selected ? '► ' : '  ') . ($i + 1) . ' ';
+            $num      = ($selected ? '► ' : '  ') . ($absIndex + 1) . ' ';
             $desc     = str_pad(mb_substr($area->name, 0, 28), 30);
             $msgs     = str_pad((string) ($area->message_count ?? '-'), 6, ' ', STR_PAD_LEFT);
             $new      = str_pad((string) ($area->unread_count ?? '-'), 6, ' ', STR_PAD_LEFT);
@@ -318,7 +332,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             ], $c);
         }
 
-        $dataRows = max(0, 20 - $total);
+        $dataRows = max(0, 20 - $visible->count());
         for ($i = 0; $i < $dataRows; $i++) {
             $rows[] = $this->row([], $n);
         }
@@ -356,12 +370,15 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->sep();
 
-        foreach ($messages->values() as $i => $msg) {
-            $selected = $i === $this->selectionIndex;
+        $visible = $messages->slice($this->topOffset, 20);
+
+        foreach ($visible->values() as $i => $msg) {
+            $absIndex = $this->topOffset + $i;
+            $selected = $absIndex === $this->selectionIndex;
             $c        = $selected ? $s : ($msg->is_read ? $n : $b);
             $num      = $selected
-                ? '  ►  ' . ($i + 1)
-                : str_pad((string) ($i + 1), 6, ' ', STR_PAD_LEFT);
+                ? '  ►  ' . ($absIndex + 1)
+                : str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT);
             $from     = '  ' . str_pad(mb_substr($msg->from_name, 0, 18), 20);
             $subj     = '  ' . str_pad(mb_substr($msg->subject, 0, 28), 30);
             $date     = $msg->posted_at ? '  ' . $msg->posted_at->format('d M y') : '          ';
@@ -370,7 +387,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             ], $c);
         }
 
-        $dataRows = max(0, 20 - $total);
+        $dataRows = max(0, 20 - $visible->count());
         for ($i = 0; $i < $dataRows; $i++) {
             $rows[] = $this->row([], $n);
         }

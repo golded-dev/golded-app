@@ -328,6 +328,20 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 | 53–68 | 16 | EchoID (left-justified, truncated) |
 | 69–71 | 3 | Group ID |
 
+**Sort order (`AREALISTSORT`):**
+
+Source: `geglob.cpp` default `"FYTUE"`, confirmed in `archive/config/GOLDAREA.CFG`. Sort keys are applied left-to-right as a multi-key comparator (`gealst.cpp` `AreaListCmp`):
+
+| Key | Meaning |
+|-----|---------|
+| `F` | Matched/pinned areas first (filter pattern match) |
+| `Y` | Areas with any unread above areas with none |
+| `T` | Area type order: NET → EMAIL → ECHO → LOCAL |
+| `U` | Unread count descending (most unread first; zero-unread areas sort last) |
+| `E` | EchoID alphabetically as final tiebreaker |
+
+**Implementation note:** Until unread tracking is implemented (Phase 4), `Y` and `U` collapse — sort falls back to `E` (echoid/name alphabetically). Full `FYTUE` ordering requires `unread_count` to be populated per-area.
+
 ---
 
 ### 10.2 Message List Screen
