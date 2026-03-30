@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Area;
+use App\Models\Dataset;
+use App\Models\Message;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -7,16 +11,136 @@ use Livewire\Component;
 new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 {
     public string $screen = 'areas';
+    public ?int $datasetId = null;
+    public ?int $areaId = null;
+    public ?int $messageId = null;
+    public int $selectionIndex = 0;
+    public int $scrollOffset = 0;
+    public int $topOffset = 0;
+
+    public function mount(): void
+    {
+        $dataset = Dataset::first();
+        if ($dataset) {
+            $this->datasetId = $dataset->id;
+        }
+    }
+
+    #[Computed]
+    public function areas(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Area::where('dataset_id', $this->datasetId ?? 0)->orderBy('sort_order')->get();
+    }
+
+    #[Computed]
+    public function messages(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Message::where('area_id', $this->areaId ?? 0)->orderBy('msgno')->get();
+    }
+
+    #[Computed]
+    public function currentMessage(): ?Message
+    {
+        return $this->messageId ? Message::find($this->messageId) : null;
+    }
 
     public function handleKey(string $key): void
     {
+        match ($this->screen) {
+            'areas'    => $this->handleAreasKey($key),
+            'messages' => $this->handleMessagesKey($key),
+            'reader'   => $this->handleReaderKey($key),
+            'editor'   => null,
+        };
+    }
+
+    private function handleAreasKey(string $key): void
+    {
+        $count = $this->areas->count();
         match ($key) {
-            '1' => $this->screen = 'areas',
-            '2' => $this->screen = 'messages',
-            '3' => $this->screen = 'reader',
-            '4' => $this->screen = 'editor',
+            'ArrowDown' => $this->selectionIndex = min($this->selectionIndex + 1, max(0, $count - 1)),
+            'ArrowUp'   => $this->selectionIndex = max(0, $this->selectionIndex - 1),
+            'ArrowRight', 'Enter' => $this->openArea(),
             default => null,
         };
+    }
+
+    private function handleMessagesKey(string $key): void
+    {
+        $count = $this->messages->count();
+        match ($key) {
+            'ArrowDown'  => $this->selectionIndex = min($this->selectionIndex + 1, max(0, $count - 1)),
+            'ArrowUp'    => $this->selectionIndex = max(0, $this->selectionIndex - 1),
+            'Enter'      => $this->openMessage(),
+            'ArrowLeft', 'Escape' => $this->backToAreas(),
+            default => null,
+        };
+    }
+
+    private function handleReaderKey(string $key): void
+    {
+        match ($key) {
+            'ArrowDown'  => $this->scrollOffset++,
+            'ArrowUp'    => $this->scrollOffset = max(0, $this->scrollOffset - 1),
+            'ArrowRight' => $this->nextMessage(),
+            'ArrowLeft'  => $this->prevMessage(),
+            'Escape'     => $this->backToMessages(),
+            default => null,
+        };
+    }
+
+    private function openArea(): void
+    {
+        $area = $this->areas->get($this->selectionIndex);
+        if (! $area) {
+            return;
+        }
+        $this->areaId = $area->id;
+        $this->selectionIndex = 0;
+        $this->screen = 'messages';
+    }
+
+    private function openMessage(): void
+    {
+        $message = $this->messages->get($this->selectionIndex);
+        if (! $message) {
+            return;
+        }
+        $this->messageId = $message->id;
+        $this->scrollOffset = 0;
+        $this->screen = 'reader';
+    }
+
+    private function backToAreas(): void
+    {
+        $this->screen = 'areas';
+        $this->selectionIndex = 0;
+    }
+
+    private function backToMessages(): void
+    {
+        $this->screen = 'messages';
+        $this->scrollOffset = 0;
+    }
+
+    private function nextMessage(): void
+    {
+        $messages = $this->messages;
+        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        if ($current !== false && $current < $messages->count() - 1) {
+            $this->messageId = $messages->get($current + 1)->id;
+            $this->scrollOffset = 0;
+        }
+    }
+
+    private function prevMessage(): void
+    {
+        $messages = $this->messages;
+        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        if ($current > 0) {
+            $this->messageId = $messages->get($current - 1)->id;
+            $this->scrollOffset = 0;
+        }
     }
 
     /** @return array<int, string> 25 HTML line strings */
@@ -161,7 +285,9 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows = [];
 
-        $rows[] = $this->top('GoldED 3.0.1', 'Area List', '3 areas, 17 new');
+        $total   = $this->areas->count();
+        $unread  = $this->areas->sum('unread_count');
+        $rows[]  = $this->top('GoldED 3.0.1', 'Area List', "{$total} areas, {$unread} new");
 
         // Column header — columns must match data: num(4) desc(30) msgs(6) chg(1) new(6) sp(1) echo(16)
         $rows[] = $this->row([
@@ -176,30 +302,29 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->sep();
 
-        // Area entries  [num+mark, desc(pad to 30), msgs(7), chg(1), new(7), sp(1), echo(16), grp(3)]
-        $areas = [
-            ['  1 ', 'Goldware Support              ', '   142', ' ', '    12', ' ', 'GOLDED          ', '   ', false],
-            ['  2 ', 'FidoNet.General               ', '    89', ' ', '     5', ' ', 'FIDONET         ', '   ', false],
-            ['► 3 ', 'NetMail                       ', '    12', ' ', '     2', ' ', 'NETMAIL         ', '   ', true],
-            ['  4 ', 'DK.Snak                       ', '    67', ' ', '     0', ' ', 'DK.SNAK         ', '   ', false],
-            ['  5 ', 'OS2.General                   ', '    34', ' ', '     3', ' ', 'OS2.GEN         ', '   ', false],
-            ['  6 ', 'THE_SAFE                      ', '     8', ' ', '     0', ' ', 'THE_SAFE        ', '   ', false],
-        ];
+        $areas = $this->areas;
 
-        foreach ($areas as [$num, $desc, $msgs, $chg, $new, $sp, $echo, $grp, $selected]) {
-            $c = $selected ? $s : $n;
-            $rows[] = $this->row([
-                [$num, $c], [$desc, $c], [$msgs, $c], [$chg, $c],
-                [$new, $c], [$sp, $c], [$echo, $c], [$grp, $c],
+        foreach ($areas->values() as $i => $area) {
+            $selected = $i === $this->selectionIndex;
+            $c        = $selected ? $s : $n;
+            $num      = ($selected ? '► ' : '  ') . ($i + 1) . ' ';
+            $desc     = str_pad(mb_substr($area->name, 0, 28), 30);
+            $msgs     = str_pad((string) ($area->message_count ?? '-'), 6, ' ', STR_PAD_LEFT);
+            $new      = str_pad((string) ($area->unread_count ?? '-'), 6, ' ', STR_PAD_LEFT);
+            $echo     = str_pad(mb_substr((string) ($area->echoid ?? ''), 0, 16), 16);
+            $rows[]   = $this->row([
+                [$num, $c], [$desc, $c], [$msgs, $c], [' ', $c],
+                [$new, $c], [' ', $c], [$echo, $c], ['   ', $c],
             ], $c);
         }
 
-        for ($i = 9; $i <= 22; $i++) {
+        $dataRows = max(0, 20 - $total);
+        for ($i = 0; $i < $dataRows; $i++) {
             $rows[] = $this->row([], $n);
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', 'Area 3 of 6', '13:45:22');
+        $rows[] = $this->status('GoldED 3.0.1', 'Area ' . ($this->selectionIndex + 1) . " of {$total}", '13:45:22');
 
         return $rows;
     }
@@ -214,7 +339,12 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows = [];
 
-        $rows[] = $this->top('NetMail', 'Message List', '12 msgs, 2 new', false);
+        $messages = $this->messages;
+        $total    = $messages->count();
+        $area     = $this->areaId ? \App\Models\Area::find($this->areaId) : null;
+        $areaName = $area?->name ?? 'Messages';
+
+        $rows[] = $this->top($areaName, 'Message List', "{$total} msgs", false);
 
         $rows[] = $this->row([
             ['     #', $b],
@@ -226,29 +356,27 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->sep();
 
-        // [num(6), tree(3), from(22), subj(32), date(11)]
-        $msgs = [
-            ['     1', '   ', '  Bjarne Hansen       ', '  Re: GoldED 3.0 beta           ', '  12 Mar 94', false, false],
-            ['     2', '   ', '  Uffe Sorensen       ', '  Nodelist update               ', '  12 Mar 94', true,  false],
-            ['  ►  3', '   ', '  Odinn Sorensen      ', '  Re: GoldED keybindings        ', '  13 Mar 94', false, true],
-            ['     4', ' ├─', '  Lars Jensen         ', '  Re: GoldED keybindings        ', '  13 Mar 94', false, false],
-            ['     5', ' └─', '  Peter Froerup       ', '  Re: GoldED keybindings        ', '  14 Mar 94', false, false],
-            ['     6', '   ', '  Thomas Nielsen      ', '  New beta available?           ', '  14 Mar 94', true,  false],
-        ];
-
-        foreach ($msgs as [$num, $tree, $from, $subj, $date, $isUnread, $isSel]) {
-            $c = $isSel ? $s : ($isUnread ? $b : $n);
-            $rows[] = $this->row([
-                [$num, $c], [$tree, $c], [$from, $c], [$subj, $c], [$date, $c],
+        foreach ($messages->values() as $i => $msg) {
+            $selected = $i === $this->selectionIndex;
+            $c        = $selected ? $s : ($msg->is_read ? $n : $b);
+            $num      = $selected
+                ? '  ►  ' . ($i + 1)
+                : str_pad((string) ($i + 1), 6, ' ', STR_PAD_LEFT);
+            $from     = '  ' . str_pad(mb_substr($msg->from_name, 0, 18), 20);
+            $subj     = '  ' . str_pad(mb_substr($msg->subject, 0, 28), 30);
+            $date     = $msg->posted_at ? '  ' . $msg->posted_at->format('d M y') : '          ';
+            $rows[]   = $this->row([
+                [$num, $c], ['   ', $c], [$from, $c], [$subj, $c], [$date, $c],
             ], $c);
         }
 
-        for ($i = 9; $i <= 22; $i++) {
+        $dataRows = max(0, 20 - $total);
+        for ($i = 0; $i < $dataRows; $i++) {
             $rows[] = $this->row([], $n);
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', 'Msg 3 of 12', '13:45:22');
+        $rows[] = $this->status('GoldED 3.0.1', 'Msg ' . ($this->selectionIndex + 1) . " of {$total}", '13:45:22');
 
         return $rows;
     }
@@ -266,46 +394,43 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows = [];
 
-        $rows[] = $this->top('[3] NetMail', '2:236/77', 'NETMAIL', false);
+        $msg      = $this->currentMessage;
+        $messages = $this->messages;
+        $total    = $messages->count();
+        $pos      = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $msgno    = $pos !== false ? $pos + 1 : 1;
+        $area     = $this->areaId ? \App\Models\Area::find($this->areaId) : null;
+        $areaName = $area?->name ?? '';
+        $echoid   = $area?->echoid ?? '';
 
-        $rows[] = $this->row([
-            [' Msg: 3 of 12  -1 +4 *5', $b],
-            ['                                      13 Mar 94 ', $b],
+        $rows[] = $this->top("[{$msgno}] {$areaName}", $msg?->from_address ?? '', $echoid, false);
+
+        $dateStr = $msg?->posted_at ? $msg->posted_at->format('d M y') : '';
+        $rows[]  = $this->row([
+            [" Msg: {$msgno} of {$total}", $b],
+            [str_repeat(' ', max(0, 54 - mb_strlen(" Msg: {$msgno} of {$total}"))) . $dateStr . ' ', $b],
         ]);
 
-        $rows[] = $this->row([[' From: ', $b], ['Odinn Sorensen                         2:236/77     ', $n]]);
-        $rows[] = $this->row([[' To  : ', $b], ['Lars Jensen                            2:236/105    ', $n]]);
-        $rows[] = $this->row([[' Subj: ', $b], ['Re: GoldED keybindings                               ', $n]]);
+        $rows[] = $this->row([[' From: ', $b], [str_pad(mb_substr($msg?->from_name ?? '', 0, 62), 62) . ' ', $n]]);
+        $rows[] = $this->row([[' To  : ', $b], [str_pad(mb_substr($msg?->to_name ?? '', 0, 62), 62) . ' ', $n]]);
+        $rows[] = $this->row([[' Subj: ', $b], [str_pad(mb_substr($msg?->subject ?? '', 0, 62), 62) . ' ', $n]]);
 
         $rows[] = $this->sep();
 
-        $body = [
-            [' ', $n],
-            [' Lars Jensen wrote:', $n],
-            [' ', $n],
-            [' > I noticed the key binding for AREA select seems odd —', $q1],
-            [' > pressing Right should open the area but it doesn\'t?', $q1],
-            [' ', $n],
-            [' Right/Enter both work for AREAselect. Check your GOLDKEYS.CFG.', $n],
-            [' The default binding has both mapped:', $n],
-            [' ', $n],
-            ['   Right  → AREAselect', $n],
-            ['   Enter  → AREAselect', $n],
-            [' ', $n],
-            [' Let me know if you\'re still stuck.', $n],
-            [' ', $n],
-            [' --- GoldED 3.0.1 Beta 3', $tear],
-            ['  * Origin: Goldware BBS, Haslev (2:236/77)', $orig],
-            [' ', $n],
-            [' ', $n],
-        ];
+        // Render body lines with scroll offset (18 visible lines)
+        $bodyLines = $msg ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
+        $visible   = array_slice($bodyLines, $this->scrollOffset, 18);
 
-        foreach ($body as [$text, $class]) {
-            $rows[] = $this->row([[$text, $class]]);
+        foreach ($visible as $line) {
+            $rows[] = $this->row([[' ' . $line, $n]]);
+        }
+
+        for ($i = count($visible); $i < 18; $i++) {
+            $rows[] = $this->row([['', $n]]);
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', 'Msg 3 of 12 (2 new)', '13:45:22');
+        $rows[] = $this->status('GoldED 3.0.1', "Msg {$msgno} of {$total}", '13:45:22');
 
         return $rows;
     }
