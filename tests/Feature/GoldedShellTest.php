@@ -64,8 +64,8 @@ it('opens area on ArrowRight', function () {
 
 it('opens the area at the current selection index', function () {
     $dataset = Dataset::factory()->create();
-    Area::factory()->for($dataset)->create(['sort_order' => 1]);
-    $second = Area::factory()->for($dataset)->create(['sort_order' => 2]);
+    Area::factory()->for($dataset)->create(['echoid' => 'ALPHA', 'unread_count' => 0]);
+    $second = Area::factory()->for($dataset)->create(['echoid' => 'BETA', 'unread_count' => 0]);
 
     Livewire::test('pages::golded-shell')
         ->call('handleKey', 'ArrowDown')
@@ -74,6 +74,27 @@ it('opens the area at the current selection index', function () {
 });
 
 // ── Message list ──────────────────────────────────────────────────────────────
+
+it('renders thread tree prefix for replies in message list', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'subject' => 'Original', 'reply_to_msgno' => null]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 2, 'subject' => 'Reply', 'reply_to_msgno' => 1]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->assertSee('└'); // reply prefix visible
+});
+
+it('shows bookmark indicator on bookmarked message', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_bookmarked' => true]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->assertSee('►');
+});
 
 it('renders message subjects when in the messages screen', function () {
     $dataset = Dataset::factory()->create();
@@ -211,6 +232,121 @@ it('does not scroll above 0 in reader', function () {
         ->call('handleKey', 'Enter')
         ->call('handleKey', 'ArrowUp')
         ->assertSet('scrollOffset', 0);
+});
+
+// ── Unread tracking ───────────────────────────────────────────────────────────
+
+it('marks a message as read when opened in reader', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    $msg = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => false]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter') // open area
+        ->call('handleKey', 'Enter'); // open message
+
+    expect($msg->fresh()->is_read)->toBeTrue();
+});
+
+it('decrements area unread_count when a message is marked read', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 2]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => false]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter');
+
+    expect($area->fresh()->unread_count)->toBe(1);
+});
+
+it('does not decrement area unread_count when opening an already-read message', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 0]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => true]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter');
+
+    expect($area->fresh()->unread_count)->toBe(0);
+});
+
+it('sorts areas with unread messages above areas without', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->create(['sort_order' => 1, 'echoid' => 'ALPHA', 'unread_count' => 0]);
+    Area::factory()->for($dataset)->create(['sort_order' => 2, 'echoid' => 'BETA', 'unread_count' => 5]);
+
+    $component = Livewire::test('pages::golded-shell');
+
+    $areas = $component->get('areas');
+    expect($areas->first()->echoid)->toBe('BETA');
+    expect($areas->last()->echoid)->toBe('ALPHA');
+});
+
+it('renders area unread colour for areas with unread messages', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->create(['name' => 'Busy Echo', 'unread_count' => 3]);
+
+    Livewire::test('pages::golded-shell')
+        ->assertSee('Busy Echo')
+        ->assertSee('cga-blue-lgrey'); // unread row colour class
+});
+
+// ── @J toggle + next/prev unread ─────────────────────────────────────────────
+
+it('toggles a read message back to unread with Alt+j', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 0]);
+    $msg = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => true]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter') // opens reader — msg is already read, no change
+        ->call('handleKey', 'Alt+j'); // toggle → unread
+
+    expect($msg->fresh()->is_read)->toBeFalse();
+    expect($area->fresh()->unread_count)->toBe(1);
+});
+
+it('toggles an unread message to read with Alt+j', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 1]);
+    $msg = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => false]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter') // opens reader — marks read (unread_count → 0)
+        ->call('handleKey', 'Alt+j'); // toggle → unread again
+
+    expect($msg->fresh()->is_read)->toBeFalse();
+});
+
+it('jumps to next unread message with Alt+ArrowRight', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 1]);
+    $first = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => true]);
+    $second = Message::factory()->for($area)->for($dataset)->create(['msgno' => 2, 'is_read' => false]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter') // open first (already read)
+        ->call('handleKey', 'Alt+ArrowRight') // jump to next unread
+        ->assertSet('messageId', $second->id);
+});
+
+it('marks message as read when jumping to it via Alt+ArrowRight', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1, 'unread_count' => 2]);
+    Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'is_read' => true]);
+    $second = Message::factory()->for($area)->for($dataset)->create(['msgno' => 2, 'is_read' => false]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Alt+ArrowRight');
+
+    expect($second->fresh()->is_read)->toBeTrue();
 });
 
 it('renders area names from the database', function () {

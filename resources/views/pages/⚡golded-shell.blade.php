@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\ThreadTree;
 use App\Models\Area;
 use App\Models\Dataset;
 use App\Models\Message;
@@ -29,7 +30,11 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     #[Computed]
     public function areas(): \Illuminate\Database\Eloquent\Collection
     {
-        return Area::where('dataset_id', $this->datasetId ?? 0)->orderBy('sort_order')->orderBy('name')->get();
+        return Area::where('dataset_id', $this->datasetId ?? 0)
+            ->orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END') // Y: unread first
+            ->orderByDesc('unread_count')                                  // U: most unread first
+            ->orderBy('echoid')                                             // E: echoid alphabetical
+            ->get();
     }
 
     #[Computed]
@@ -92,12 +97,15 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     private function handleReaderKey(string $key): void
     {
         match ($key) {
-            'ArrowDown'  => $this->scrollOffset++,
-            'ArrowUp'    => $this->scrollOffset = max(0, $this->scrollOffset - 1),
-            'ArrowRight' => $this->nextMessage(),
-            'ArrowLeft'  => $this->prevMessage(),
-            'Escape'     => $this->backToMessages(),
-            default => null,
+            'ArrowDown'               => $this->scrollOffset++,
+            'ArrowUp'                 => $this->scrollOffset = max(0, $this->scrollOffset - 1),
+            'ArrowRight'              => $this->nextMessage(),
+            'ArrowLeft'               => $this->prevMessage(),
+            'Alt+ArrowRight', 'Alt+u' => $this->nextUnreadMessage(),
+            'Alt+ArrowLeft'           => $this->prevUnreadMessage(),
+            'Alt+j'                   => $this->toggleReadUnread(),
+            'Escape'                  => $this->backToMessages(),
+            default                   => null,
         };
     }
 
@@ -119,9 +127,32 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         if (! $message) {
             return;
         }
-        $this->messageId = $message->id;
+        $this->messageId    = $message->id;
         $this->scrollOffset = 0;
-        $this->screen = 'reader';
+        $this->screen       = 'reader';
+        $this->markRead($message->id);
+    }
+
+    private function markRead(int $messageId): void
+    {
+        $message = Message::find($messageId);
+        if (! $message || $message->is_read) {
+            return;
+        }
+        $message->update(['is_read' => true]);
+        Area::where('id', $message->area_id)->where('unread_count', '>', 0)->decrement('unread_count');
+        unset($this->areas);
+    }
+
+    private function markUnread(int $messageId): void
+    {
+        $message = Message::find($messageId);
+        if (! $message || ! $message->is_read) {
+            return;
+        }
+        $message->update(['is_read' => false]);
+        Area::where('id', $message->area_id)->increment('unread_count');
+        unset($this->areas);
     }
 
     private function backToAreas(): void
@@ -153,6 +184,52 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         if ($current > 0) {
             $this->messageId = $messages->get($current - 1)->id;
             $this->scrollOffset = 0;
+        }
+    }
+
+    private function nextUnreadMessage(): void
+    {
+        $messages = $this->messages;
+        $current  = $messages->search(fn ($m) => $m->id === $this->messageId);
+        if ($current === false) {
+            return;
+        }
+        $next = $messages->slice($current + 1)->first(fn ($m) => ! $m->is_read);
+        if ($next) {
+            $this->messageId    = $next->id;
+            $this->scrollOffset = 0;
+            $this->markRead($next->id);
+        }
+    }
+
+    private function prevUnreadMessage(): void
+    {
+        $messages = $this->messages;
+        $current  = $messages->search(fn ($m) => $m->id === $this->messageId);
+        if ($current === false || $current === 0) {
+            return;
+        }
+        $prev = $messages->slice(0, $current)->last(fn ($m) => ! $m->is_read);
+        if ($prev) {
+            $this->messageId    = $prev->id;
+            $this->scrollOffset = 0;
+            $this->markRead($prev->id);
+        }
+    }
+
+    private function toggleReadUnread(): void
+    {
+        if (! $this->messageId) {
+            return;
+        }
+        $message = Message::find($this->messageId);
+        if (! $message) {
+            return;
+        }
+        if ($message->is_read) {
+            $this->markUnread($this->messageId);
+        } else {
+            $this->markRead($this->messageId);
         }
     }
 
@@ -320,7 +397,8 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         foreach ($visible->values() as $i => $area) {
             $absIndex = $this->topOffset + $i;
             $selected = $absIndex === $this->selectionIndex;
-            $c        = $selected ? $s : $n;
+            $hasUnread = ($area->unread_count ?? 0) > 0;
+            $c        = $selected ? $s : ($hasUnread ? $b : $n);
             $num      = ($selected ? '► ' : '  ') . ($absIndex + 1) . ' ';
             $desc     = str_pad(mb_substr($area->name, 0, 28), 30);
             $msgs     = str_pad((string) ($area->message_count ?? '-'), 6, ' ', STR_PAD_LEFT);
@@ -357,33 +435,55 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $total    = $messages->count();
         $area     = $this->areaId ? \App\Models\Area::find($this->areaId) : null;
         $areaName = $area?->name ?? 'Messages';
+        $unread   = $messages->where('is_read', false)->count();
+        $summary  = $unread > 0 ? "{$total} msgs, {$unread} new" : "{$total} msgs";
 
-        $rows[] = $this->top($areaName, 'Message List', "{$total} msgs", false);
+        $rows[] = $this->top($areaName, 'Message List', $summary, false);
 
+        // Column header — must match data column widths below
+        // msgno(6) sp(1) bk(1) mk(1) sp(1) thread(8) from(20) sp(1) subj(31) date(8) = 78
         $rows[] = $this->row([
-            ['     #', $b],
-            ['   ', $b],
-            ['  From                ', $b],
-            ['  Subject                       ', $b],
-            ['  Date', $b],
+            ['     #', $b],  // 6
+            [' ', $b],        // 1
+            [' ', $b],        // 1 bookmark
+            [' ', $b],        // 1 mark
+            [' ', $b],        // 1
+            ['        ', $b], // 8 thread
+            ['From                ', $b], // 20
+            [' ', $b],        // 1
+            ['Subject                        ', $b], // 31
+            ['Date    ', $b], // 8
         ]);
 
         $rows[] = $this->sep();
 
+        $tree    = (new ThreadTree)->build($messages);
         $visible = $messages->slice($this->topOffset, 20);
 
         foreach ($visible->values() as $i => $msg) {
             $absIndex = $this->topOffset + $i;
             $selected = $absIndex === $this->selectionIndex;
             $c        = $selected ? $s : ($msg->is_read ? $n : $b);
-            $num      = $selected
-                ? '  ►  ' . ($absIndex + 1)
-                : str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT);
-            $from     = '  ' . str_pad(mb_substr($msg->from_name, 0, 18), 20);
-            $subj     = '  ' . str_pad(mb_substr($msg->subject, 0, 28), 30);
-            $date     = $msg->posted_at ? '  ' . $msg->posted_at->format('d M y') : '          ';
-            $rows[]   = $this->row([
-                [$num, $c], ['   ', $c], [$from, $c], [$subj, $c], [$date, $c],
+
+            $num    = str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT); // 6
+            $bk     = $msg->is_bookmarked ? '►' : ' ';                          // 1
+            $mk     = $msg->is_marked ? '■' : ' ';                              // 1
+            $thread = $tree[$msg->id] ?? str_repeat(' ', 8);                    // 8
+            $from   = mb_str_pad(mb_substr($msg->from_name, 0, 20), 20);        // 20
+            $subj   = mb_str_pad(mb_substr($msg->subject, 0, 31), 31);          // 31
+            $date   = $msg->posted_at ? $msg->posted_at->format('d M y') : '       '; // 8
+
+            $rows[] = $this->row([
+                [$num, $c],    // 6
+                [' ', $c],     // 1
+                [$bk, $c],     // 1
+                [$mk, $c],     // 1
+                [' ', $c],     // 1
+                [$thread, $c], // 8
+                [$from, $c],   // 20
+                [' ', $c],     // 1
+                [$subj, $c],   // 31
+                [$date, $c],   // 8
             ], $c);
         }
 
@@ -512,7 +612,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
 <div
     x-data
-    @keydown.window="$wire.handleKey($event.key)"
+    @keydown.window="$wire.handleKey(($event.altKey ? 'Alt+' : '') + $event.key)"
     class="golded-shell"
     tabindex="-1"
 >
