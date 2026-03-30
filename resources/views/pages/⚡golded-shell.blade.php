@@ -500,5 +500,5 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     tabindex="-1"
 >
     <pre class="golded-pre">@foreach ($this->currentScreen() as $i => $line)<span class="{{ $i === 24 ? 'golded-row-status' : 'golded-row' }}">{!! $line !!}</span>@endforeach</pre>
-    <div class="golded-hint">Keys 1–4 switch screens</div>
+
 </div>

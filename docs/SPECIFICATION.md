@@ -263,6 +263,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 | `STATUS_BAR` | WHITE | BLUE | Bottom status line |
 | `AREA_NORMAL` | BLACK | LGREY | Area list row |
 | `AREA_SELECTED` | WHITE | BLUE | Selected area |
+| `AREA_UNREAD` | BLUE | LGREY | Area with unread messages |
 | `AREA_HIGHLIGHT` | RED | LGREY | Search match |
 | `DIALOG_BG` | LGREY | BLUE | Popup dialog background |
 | `DIALOG_BORDER` | LBLUE | BLUE | Popup dialog border |
@@ -274,7 +275,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 ## 10. Screen Prototypes
 
 > Box drawing uses Unicode equivalents of DOS CP437.
-> `▶` = selected row indicator (`MMRK_BOOK` = 0x11).
+> `►` (U+25BA) = selected row indicator (`MMRK_BOOK` = 0x11). Note: NOT `▶` (U+25B6) — CP437 0x11 maps to U+25BA specifically. The difference matters: U+25BA is 3 UTF-8 bytes, which breaks `str_pad()` byte-length assumptions.
 > `■` = marked message indicator (`MMRK_MARK` = 0x10).
 > Colours indicated in `[brackets]` after relevant sections.
 
@@ -288,7 +289,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 ├────────────────────────────────────────────────────────────────┤
 │   1  Goldware Support                   142     12  GOLDED     │  [AREA_NORMAL=BLACK@LGREY]
 │   2  FidoNet.General                     89      5  FIDONET    │
-│▶  3  NetMail                             12      2  NETMAIL    │  [AREA_SELECTED=WHITE@BLUE]
+│►  3  NetMail                             12      2  NETMAIL    │  [AREA_SELECTED=WHITE@BLUE]
 │   4  DK.Snak                             67      0  DK.SNAK    │
 │   5  OS2.General                         34      3  OS2.GEN    │  [AREA_UNREAD=BLUE@LGREY]
 │   6  THE_SAFE                              8      0  THE_SAFE   │
@@ -337,7 +338,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 ├────────────────────────────────────────────────────────────────┤
 │      1      Bjarne Hansen   Re: GoldED 3.0 beta       12 Mar 94 │  [LIST_NORMAL]
 │      2      Uffe Sorensen   Nodelist update            12 Mar 94 │  [LIST_UNREAD=BLUE@LGREY]
-│▶   ■ 3      Odinn Sorensen  Re: GoldED keybindings     13 Mar 94 │  [LIST_SELECTED=WHITE@BLUE]
+│►   ■ 3      Odinn Sorensen  Re: GoldED keybindings     13 Mar 94 │  [LIST_SELECTED=WHITE@BLUE]
 │      4   └  Lars Jensen     Re: GoldED keybindings     13 Mar 94 │
 │      5   └  Peter Froerup   Re: GoldED keybindings     14 Mar 94 │
 │      6      Thomas Nielsen  New beta available?         14 Mar 94 │  [LIST_UNREAD=BLUE@LGREY]
@@ -367,7 +368,7 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 |-----|-------|-------|
 | 1–6 | 6 | Message number (right-justified) |
 | 7 | 1 | Space |
-| 8 | 1 | Bookmark (`▶` = 0x11 or space) |
+| 8 | 1 | Bookmark (`►` U+25BA = 0x11 or space) |
 | 9 | 1 | Mark (`■` = 0x10 or space) |
 | 10 | 1 | Space |
 | 11–18 | 8 | Thread tree structure (ASCII box chars, see §10.5) |
@@ -523,7 +524,7 @@ Characters used (Unicode equivalents of DOS CP437):
 ```
             ┌─ Delete message? ──────────┐    [DIALOG_BORDER=LBLUE@BLUE]
             │                            │    [DIALOG_BG=LGREY@BLUE]
-            │  ▶ Yes — delete message    │    [DIALOG_SELECTED=WHITE@RED]
+            │  ► Yes — delete message    │    [DIALOG_SELECTED=WHITE@RED]
             │    No  — keep message      │
             │                            │
             └────────────────────────────┘
