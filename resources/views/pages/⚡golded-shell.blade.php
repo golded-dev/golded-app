@@ -20,7 +20,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
     public function mount(): void
     {
-        $dataset = Dataset::first();
+        $dataset = Dataset::withCount('messages')->orderByDesc('messages_count')->first();
         if ($dataset) {
             $this->datasetId = $dataset->id;
         }

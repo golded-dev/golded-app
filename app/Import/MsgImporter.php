@@ -43,6 +43,8 @@ class MsgImporter
             $count++;
         }
 
+        $area->update(['message_count' => $count]);
+
         return $count;
     }
 
