@@ -84,6 +84,41 @@ it('renders spec §10.5 example correctly', function () {
     expect($tree[5])->toStartWith('└ ');
 });
 
+// ── order() ───────────────────────────────────────────────────────────────────
+
+it('orders root-only messages by msgno', function () {
+    $messages = collect([msg(3, 3), msg(1, 1), msg(2, 2)]);
+    $ordered = (new ThreadTree)->order($messages);
+
+    expect($ordered->pluck('id')->all())->toBe([1, 2, 3]);
+});
+
+it('places replies immediately after their parent in depth-first order', function () {
+    // 1 root, 2 replies to 1, 3 is a separate root
+    $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3)]);
+    $ordered = (new ThreadTree)->order($messages);
+
+    expect($ordered->pluck('id')->all())->toBe([1, 2, 3]);
+});
+
+it('groups nested replies under their ancestor before moving to next sibling', function () {
+    // 1 → 2 → 4 (deep chain), 1 → 3 (sibling of 2)
+    $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3, 1), msg(4, 4, 2)]);
+    $ordered = (new ThreadTree)->order($messages);
+
+    // Depth-first: 1, 2, 4 (child of 2), 3 (sibling of 2)
+    expect($ordered->pluck('id')->all())->toBe([1, 2, 4, 3]);
+});
+
+it('handles the spec §10.5 example in correct thread order', function () {
+    // 1: root; 2,3,5: direct replies to 1; 4: reply to 3
+    $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3, 1), msg(4, 4, 3), msg(5, 5, 1)]);
+    $ordered = (new ThreadTree)->order($messages);
+
+    // Depth-first: 1, 2, 3, 4, 5
+    expect($ordered->pluck('id')->all())->toBe([1, 2, 3, 4, 5]);
+});
+
 it('ignores reply_to_msgno not present in the collection', function () {
     $messages = collect([msg(1, 1, 99)]);
     $tree = (new ThreadTree)->build($messages);

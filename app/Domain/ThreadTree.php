@@ -7,20 +7,89 @@ use Illuminate\Support\Collection;
 class ThreadTree
 {
     /**
+     * Return messages sorted into depth-first thread order.
+     *
+     * Mirrors gemlst.cpp recursive_build(): visit root, then first child and
+     * its subtree, then next sibling and its subtree.  Within each sibling
+     * group children are ordered by msgno (the order they arrived).
+     *
+     * Root messages (no parent in the collection) are sorted by msgno and
+     * act as thread anchors.
+     *
+     * @param  Collection<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
+     * @return Collection<int, object>
+     */
+    public function order(Collection $messages): Collection
+    {
+        if ($messages->isEmpty()) {
+            return $messages;
+        }
+
+        [$children, $parents] = $this->buildLinks($messages);
+
+        $idToMsg = $messages->keyBy('id')->all();
+
+        $roots = $messages
+            ->filter(fn ($m) => ! isset($parents[$m->id]))
+            ->sortBy('msgno')
+            ->values();
+
+        $ordered = [];
+        $visited = [];
+
+        foreach ($roots as $root) {
+            $this->visit($root->id, $children, $idToMsg, $ordered, $visited);
+        }
+
+        return collect($ordered);
+    }
+
+    /**
      * Build thread tree prefixes for a collection of messages.
      *
      * Returns array<int, string> — message id => 8-char tree prefix.
-     * Uses reply_to_msgno to link children to parents within the collection.
+     *
+     * Algorithm from gemlst.cpp GenTree():
+     *   - Root messages: 8 spaces.
+     *   - Own connector: ├ if the message has a next sibling, └ if it is last.
+     *   - For each ancestor going up: │ if that ancestor has a next sibling,
+     *     space if it was the last child.
+     *
+     * Call order() first and pass the result here so the prefixes visually
+     * connect between consecutive rows in the display.
      *
      * @param  Collection<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
      * @return array<int, string>
      */
     public function build(Collection $messages): array
     {
-        /** @var array<int, int> $msgnoToId  msgno => message id */
+        [$children, $parents] = $this->buildLinks($messages);
+        $replynext = $this->buildReplynext($children);
+
+        $prefixes = [];
+
+        foreach ($messages as $msg) {
+            $prefixes[$msg->id] = $this->prefix($msg->id, $replynext, $parents);
+        }
+
+        return $prefixes;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Build children map and parents map from reply_to_msgno links.
+     *
+     * Children are appended in iteration order (msgno order if the collection
+     * is sorted by msgno, which it should be when fetched from the DB).
+     *
+     * @return array{0: array<int, list<int>>, 1: array<int, int>}
+     */
+    private function buildLinks(Collection $messages): array
+    {
         $msgnoToId = $messages->pluck('id', 'msgno')->all();
 
-        /** @var array<int, list<int>> $children  id => [child ids in order] */
+        /** @var array<int, list<int>> $children  parent id => [child ids in order] */
         $children = [];
         /** @var array<int, int> $parents  child id => parent id */
         $parents = [];
@@ -30,66 +99,103 @@ class ThreadTree
         }
 
         foreach ($messages as $msg) {
-            if ($msg->reply_to_msgno !== null && isset($msgnoToId[$msg->reply_to_msgno])) {
+            if (
+                $msg->reply_to_msgno !== null
+                && isset($msgnoToId[$msg->reply_to_msgno])
+                && $msgnoToId[$msg->reply_to_msgno] !== $msg->id // no self-references
+            ) {
                 $parentId = $msgnoToId[$msg->reply_to_msgno];
                 $children[$parentId][] = $msg->id;
                 $parents[$msg->id] = $parentId;
             }
         }
 
-        $prefixes = [];
-
-        foreach ($messages as $msg) {
-            $prefixes[$msg->id] = $this->prefix($msg->id, $parents, $children);
-        }
-
-        return $prefixes;
+        return [$children, $parents];
     }
 
     /**
-     * Build the 8-char tree prefix for one message by walking up to its root.
+     * Build replynext map: for each message, the id of its next sibling (or null).
      *
-     * Each level of nesting contributes 2 chars:
-     *   - Last position in parent's children list → '└ ' (leaf) or '  ' (ancestor)
-     *   - Non-last position → '├ ' (leaf) or '│ ' (ancestor)
+     * This is derived from the ordered children lists, which encode sibling order.
      *
-     * @param  array<int, int>  $parents
      * @param  array<int, list<int>>  $children
+     * @return array<int, int|null>
      */
-    private function prefix(int $id, array $parents, array $children): string
+    private function buildReplynext(array $children): array
     {
-        // Walk from this node to root, recording whether each node
-        // is the last sibling among its parent's children.
-        $path = [];
+        $replynext = [];
+
+        foreach ($children as $siblings) {
+            $count = count($siblings);
+            for ($i = 0; $i < $count; $i++) {
+                $replynext[$siblings[$i]] = $siblings[$i + 1] ?? null;
+            }
+        }
+
+        return $replynext;
+    }
+
+    /**
+     * Depth-first traversal, visiting a node and then all its descendants.
+     * Guards against cycles.
+     *
+     * @param  array<int, list<int>>  $children
+     * @param  array<int, object>  $idToMsg
+     * @param  list<object>  $ordered
+     * @param  array<int, true>  $visited
+     */
+    private function visit(int $id, array $children, array $idToMsg, array &$ordered, array &$visited): void
+    {
+        if (isset($visited[$id]) || ! isset($idToMsg[$id])) {
+            return;
+        }
+
+        $visited[$id] = true;
+        $ordered[] = $idToMsg[$id];
+
+        foreach ($children[$id] ?? [] as $childId) {
+            $this->visit($childId, $children, $idToMsg, $ordered, $visited);
+        }
+    }
+
+    /**
+     * Build the 8-char prefix for one message (gemlst.cpp GenTree()).
+     *
+     *   - Root messages return 8 spaces.
+     *   - Own connector: ├ if message has a next sibling, else └.
+     *   - For each ancestor going up to (but not including) the root:
+     *       │ if the ancestor has a next sibling, space if it was last.
+     *   - Truncated to 8 chars if nesting exceeds 4 levels.
+     *
+     * @param  array<int, int|null>  $replynext  id => next-sibling id or null
+     * @param  array<int, int>  $parents  child id => parent id
+     */
+    private function prefix(int $id, array $replynext, array $parents): string
+    {
+        if (! isset($parents[$id])) {
+            return str_repeat(' ', 8);
+        }
+
+        // Own connector
+        $parts = [isset($replynext[$id]) ? '├ ' : '└ '];
+
+        // Walk up the ancestor chain; stop before root (root has no parent)
         $current = $id;
 
         while (isset($parents[$current])) {
             $parentId = $parents[$current];
-            $siblings = $children[$parentId];
-            $path[] = end($siblings) === $current ? 'last' : 'more';
+
+            if (! isset($parents[$parentId])) {
+                // Parent is root — no continuation line needed above it
+                break;
+            }
+
+            $parts[] = isset($replynext[$parentId]) ? '│ ' : '  ';
             $current = $parentId;
         }
 
-        if (empty($path)) {
-            return str_repeat(' ', 8);
-        }
-
-        // path is root→leaf order after reversing
-        $path = array_reverse($path);
-        $depth = count($path);
-        $prefix = '';
-
-        for ($i = 0; $i < $depth; $i++) {
-            $isLeaf = ($i === $depth - 1);
-            $isLast = ($path[$i] === 'last');
-
-            if ($isLeaf) {
-                $prefix .= $isLast ? '└ ' : '├ ';
-            } else {
-                // Continuation: show │ if this ancestor still has siblings below
-                $prefix .= $isLast ? '  ' : '│ ';
-            }
-        }
+        // Reverse: outermost ancestor is leftmost in display
+        $prefix = implode('', array_reverse($parts));
 
         return mb_str_pad(mb_substr($prefix, 0, 8), 8);
     }

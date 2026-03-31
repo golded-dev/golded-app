@@ -38,9 +38,11 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     }
 
     #[Computed]
-    public function messages(): \Illuminate\Database\Eloquent\Collection
+    public function messages(): \Illuminate\Support\Collection
     {
-        return Message::where('area_id', $this->areaId ?? 0)->orderBy('msgno')->get();
+        $msgs = Message::where('area_id', $this->areaId ?? 0)->orderBy('msgno')->get();
+
+        return (new ThreadTree)->order($msgs);
     }
 
     #[Computed]
