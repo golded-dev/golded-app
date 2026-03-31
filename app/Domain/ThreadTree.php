@@ -91,6 +91,6 @@ class ThreadTree
             }
         }
 
-        return mb_str_pad($prefix, 8);
+        return mb_str_pad(mb_substr($prefix, 0, 8), 8);
     }
 }

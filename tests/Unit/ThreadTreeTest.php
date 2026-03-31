@@ -91,6 +91,21 @@ it('ignores reply_to_msgno not present in the collection', function () {
     expect($tree[1])->toBe('        ');
 });
 
+it('truncates deep nesting to exactly 8 chars (max 4 levels)', function () {
+    // 5 levels deep — prefix would be 10 chars without capping
+    $messages = collect([
+        msg(1, 1),
+        msg(2, 2, 1),
+        msg(3, 3, 2),
+        msg(4, 4, 3),
+        msg(5, 5, 4),
+        msg(6, 6, 5), // 5 levels deep
+    ]);
+    $tree = (new ThreadTree)->build($messages);
+
+    expect(mb_strlen($tree[6]))->toBe(8);
+});
+
 it('pads all prefixes to exactly 8 chars', function () {
     $messages = collect([
         msg(1, 1),

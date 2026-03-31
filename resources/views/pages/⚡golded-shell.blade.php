@@ -441,18 +441,18 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $rows[] = $this->top($areaName, 'Message List', $summary, false);
 
         // Column header — must match data column widths below
-        // msgno(6) sp(1) bk(1) mk(1) sp(1) thread(8) from(20) sp(1) subj(31) date(8) = 78
+        // msgno(6) sp(1) bk(1) mk(1) sp(1) thread(8) from(20) sp(1) subj(30) date(9) = 78
         $rows[] = $this->row([
-            ['     #', $b],  // 6
-            [' ', $b],        // 1
-            [' ', $b],        // 1 bookmark
-            [' ', $b],        // 1 mark
-            [' ', $b],        // 1
-            ['        ', $b], // 8 thread
-            ['From                ', $b], // 20
-            [' ', $b],        // 1
-            ['Subject                        ', $b], // 31
-            ['Date    ', $b], // 8
+            ['     #', $b],   // 6
+            [' ', $b],         // 1
+            [' ', $b],         // 1 bookmark
+            [' ', $b],         // 1 mark
+            [' ', $b],         // 1
+            ['        ', $b],  // 8 thread
+            ['From                ', $b],  // 20
+            [' ', $b],         // 1
+            ['Subject                       ', $b], // 30
+            ['Date     ', $b], // 9
         ]);
 
         $rows[] = $this->sep();
@@ -465,13 +465,15 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $selected = $absIndex === $this->selectionIndex;
             $c        = $selected ? $s : ($msg->is_read ? $n : $b);
 
-            $num    = str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT); // 6
-            $bk     = $msg->is_bookmarked ? '►' : ' ';                          // 1
-            $mk     = $msg->is_marked ? '■' : ' ';                              // 1
-            $thread = $tree[$msg->id] ?? str_repeat(' ', 8);                    // 8
-            $from   = mb_str_pad(mb_substr($msg->from_name, 0, 20), 20);        // 20
-            $subj   = mb_str_pad(mb_substr($msg->subject, 0, 31), 31);          // 31
-            $date   = $msg->posted_at ? $msg->posted_at->format('d M y') : '       '; // 8
+            $num    = str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT);  // 6
+            $bk     = $msg->is_bookmarked ? '►' : ' ';                           // 1
+            $mk     = $msg->is_marked ? '■' : ' ';                               // 1
+            $thread = $tree[$msg->id] ?? str_repeat(' ', 8);                     // 8
+            $from   = mb_str_pad(mb_substr($msg->from_name, 0, 20), 20);         // 20
+            $subj   = mb_str_pad(mb_substr($msg->subject, 0, 30), 30);           // 30
+            $date   = $msg->posted_at
+                ? mb_str_pad($msg->posted_at->format('j M y'), 9)
+                : str_repeat(' ', 9);                                             // 9
 
             $rows[] = $this->row([
                 [$num, $c],    // 6
@@ -482,8 +484,8 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
                 [$thread, $c], // 8
                 [$from, $c],   // 20
                 [' ', $c],     // 1
-                [$subj, $c],   // 31
-                [$date, $c],   // 8
+                [$subj, $c],   // 30
+                [$date, $c],   // 9
             ], $c);
         }
 
@@ -534,9 +536,17 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 
         $rows[] = $this->sep();
 
-        // Render body lines with scroll offset (18 visible lines)
-        $bodyLines = $msg ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
-        $visible   = array_slice($bodyLines, $this->scrollOffset, 18);
+        // Render body lines with scroll offset (18 visible lines).
+        // Word-wrap at 76 chars so content stays within the 78-char content area.
+        $rawLines = $msg ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
+        $bodyLines = [];
+        foreach ($rawLines as $line) {
+            $wrapped = explode("\n", wordwrap($line, 76, "\n", true));
+            foreach ($wrapped as $wl) {
+                $bodyLines[] = $wl;
+            }
+        }
+        $visible = array_slice($bodyLines, $this->scrollOffset, 18);
 
         foreach ($visible as $line) {
             $rows[] = $this->row([[' ' . $line, $n]]);
