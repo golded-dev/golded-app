@@ -443,18 +443,17 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $rows[] = $this->top($areaName, 'Message List', $summary, false);
 
         // Column header — must match data column widths below
-        // msgno(6) sp(1) bk(1) mk(1) sp(1) thread(8) from(20) sp(1) subj(30) date(9) = 78
+        // msgno(6) sp(1) thread(8) bk(1) mk(1) from(21) sp(1) subj(30) date(9) = 78
         $rows[] = $this->row([
-            ['     #', $b],   // 6
-            [' ', $b],         // 1
-            [' ', $b],         // 1 bookmark
-            [' ', $b],         // 1 mark
-            [' ', $b],         // 1
-            ['        ', $b],  // 8 thread
-            ['From                ', $b],  // 20
-            [' ', $b],         // 1
+            ['     #', $b],                         // 6
+            [' ', $b],                              // 1
+            ['        ', $b],                       // 8 thread
+            [' ', $b],                              // 1 bookmark
+            [' ', $b],                              // 1 mark
+            ['From                 ', $b],          // 21
+            [' ', $b],                              // 1
             ['Subject                       ', $b], // 30
-            ['Date     ', $b], // 9
+            ['Date     ', $b],                      // 9
         ]);
 
         $rows[] = $this->sep();
@@ -468,10 +467,10 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $c        = $selected ? $s : ($msg->is_read ? $n : $b);
 
             $num    = str_pad((string) ($absIndex + 1), 6, ' ', STR_PAD_LEFT);  // 6
+            $thread = $tree[$msg->id] ?? str_repeat(' ', 8);                     // 8
             $bk     = $msg->is_bookmarked ? '►' : ' ';                           // 1
             $mk     = $msg->is_marked ? '■' : ' ';                               // 1
-            $thread = $tree[$msg->id] ?? str_repeat(' ', 8);                     // 8
-            $from   = mb_str_pad(mb_substr($msg->from_name, 0, 20), 20);         // 20
+            $from   = mb_str_pad(mb_substr($msg->from_name, 0, 21), 21);         // 21
             $subj   = mb_str_pad(mb_substr($msg->subject, 0, 30), 30);           // 30
             $date   = $msg->posted_at
                 ? $msg->posted_at->format('d M y')
@@ -480,11 +479,10 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $rows[] = $this->row([
                 [$num, $c],    // 6
                 [' ', $c],     // 1
+                [$thread, $c], // 8
                 [$bk, $c],     // 1
                 [$mk, $c],     // 1
-                [' ', $c],     // 1
-                [$thread, $c], // 8
-                [$from, $c],   // 20
+                [$from, $c],   // 21
                 [' ', $c],     // 1
                 [$subj, $c],   // 30
                 [$date, $c],   // 9
