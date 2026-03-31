@@ -64,7 +64,7 @@ it('renders continuation │ on ancestor when it has more siblings', function ()
     ]);
     $tree = (new ThreadTree)->build($messages);
 
-    expect($tree[2])->toStartWith(' ├ ');
+    expect($tree[2])->toStartWith(' ├─┐'); // msg2 has child msg4
     expect($tree[3])->toStartWith(' └ ');
     expect($tree[4])->toStartWith(' │ └ ');
 });
@@ -85,8 +85,8 @@ it('renders spec §10.5 example correctly', function () {
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toStartWith('─┐');
-    expect($tree[2])->toStartWith(' ├ ');
-    expect($tree[3])->toStartWith(' ├ ');
+    expect($tree[2])->toStartWith(' ├ ');   // msg2 has no children
+    expect($tree[3])->toStartWith(' ├─┐');  // msg3 has child msg4
     expect($tree[4])->toStartWith(' │ └ ');
     expect($tree[5])->toStartWith(' └ ');
 });
