@@ -69,7 +69,7 @@ class ThreadTree
         $prefixes = [];
 
         foreach ($messages as $msg) {
-            $prefixes[$msg->id] = $this->prefix($msg->id, $replynext, $parents);
+            $prefixes[$msg->id] = $this->prefix($msg->id, $replynext, $parents, $children);
         }
 
         return $prefixes;
@@ -161,7 +161,8 @@ class ThreadTree
     /**
      * Build the 8-char prefix for one message (gemlst.cpp GenTree()).
      *
-     *   - Root messages return 8 spaces.
+     *   - Root with children: ─┐ + spaces (bend shows thread starting here).
+     *   - Root without children: 8 spaces.
      *   - Own connector: ├ if message has a next sibling, else └.
      *   - For each ancestor going up to (but not including) the root:
      *       │ if the ancestor has a next sibling, space if it was last.
@@ -169,11 +170,15 @@ class ThreadTree
      *
      * @param  array<int, int|null>  $replynext  id => next-sibling id or null
      * @param  array<int, int>  $parents  child id => parent id
+     * @param  array<int, list<int>>  $children  parent id => [child ids]
      */
-    private function prefix(int $id, array $replynext, array $parents): string
+    private function prefix(int $id, array $replynext, array $parents, array $children): string
     {
         if (! isset($parents[$id])) {
-            return str_repeat(' ', 8);
+            // Root: show ─┐ bend if it has replies, blank otherwise.
+            return ! empty($children[$id])
+                ? mb_str_pad('─┐', 8)
+                : str_repeat(' ', 8);
         }
 
         // Own connector

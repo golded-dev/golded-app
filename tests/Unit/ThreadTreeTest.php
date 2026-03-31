@@ -8,19 +8,26 @@ function msg(int $id, int $msgno, ?int $replyTo = null): object
     return (object) ['id' => $id, 'msgno' => $msgno, 'reply_to_msgno' => $replyTo];
 }
 
-it('returns blank prefix for a root message', function () {
+it('returns blank prefix for a root message with no replies', function () {
     $messages = collect([msg(1, 1)]);
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toBe('        ');
 });
 
-it('returns blank prefix for multiple root messages', function () {
+it('returns blank prefix for multiple root messages with no replies', function () {
     $messages = collect([msg(1, 1), msg(2, 2)]);
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toBe('        ');
     expect($tree[2])->toBe('        ');
+});
+
+it('shows ─┐ bend on root message that has replies', function () {
+    $messages = collect([msg(1, 1), msg(2, 2, 1)]);
+    $tree = (new ThreadTree)->build($messages);
+
+    expect($tree[1])->toStartWith('─┐');
 });
 
 it('marks last child with └', function () {
@@ -29,7 +36,7 @@ it('marks last child with └', function () {
     $messages = collect([msg(1, 1), msg(2, 2, 1)]);
     $tree = (new ThreadTree)->build($messages);
 
-    expect($tree[1])->toBe('        ');
+    expect($tree[1])->toStartWith('─┐');
     expect($tree[2])->toStartWith(' └ ');
 });
 
@@ -77,7 +84,7 @@ it('renders spec §10.5 example correctly', function () {
     ]);
     $tree = (new ThreadTree)->build($messages);
 
-    expect($tree[1])->toBe('        ');
+    expect($tree[1])->toStartWith('─┐');
     expect($tree[2])->toStartWith(' ├ ');
     expect($tree[3])->toStartWith(' ├ ');
     expect($tree[4])->toStartWith(' │ └ ');
