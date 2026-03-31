@@ -206,6 +206,12 @@ class ThreadTree
         // start with one space before their connector.
         $prefix = ' '.implode('', array_reverse($parts));
 
-        return mb_str_pad(mb_substr($prefix, 0, 8), 8);
+        // If nesting is deep, truncate from the LEFT so the connector (└─/├─/└─┐/├─┐)
+        // at the right end is always preserved rather than cut off.
+        if (mb_strlen($prefix) > 8) {
+            $prefix = mb_substr($prefix, -8);
+        }
+
+        return mb_str_pad($prefix, 8);
     }
 }

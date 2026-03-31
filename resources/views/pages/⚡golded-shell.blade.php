@@ -474,7 +474,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $from   = mb_str_pad(mb_substr($msg->from_name, 0, 20), 20);         // 20
             $subj   = mb_str_pad(mb_substr($msg->subject, 0, 30), 30);           // 30
             $date   = $msg->posted_at
-                ? mb_str_pad($msg->posted_at->format('j M y'), 9)
+                ? $msg->posted_at->format('d M y') . ' '
                 : str_repeat(' ', 9);                                             // 9
 
             $rows[] = $this->row([
