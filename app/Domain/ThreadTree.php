@@ -194,8 +194,11 @@ class ThreadTree
             $current = $parentId;
         }
 
-        // Reverse: outermost ancestor is leftmost in display
-        $prefix = implode('', array_reverse($parts));
+        // Reverse: outermost ancestor is leftmost in display.
+        // The leading space mirrors GenTree's q+=2 which skips root's continuation
+        // char but keeps the space that preceded it — so all non-root messages
+        // start with one space before their connector.
+        $prefix = ' '.implode('', array_reverse($parts));
 
         return mb_str_pad(mb_substr($prefix, 0, 8), 8);
     }
