@@ -183,7 +183,7 @@ class ThreadTree
 
         // Own connector — append ─┐ bend when this message has its own replies.
         $connector = isset($replynext[$id]) ? '├' : '└';
-        $parts = [! empty($children[$id]) ? $connector.'─┐' : $connector.' '];
+        $parts = [! empty($children[$id]) ? $connector.'─┐' : $connector.'─'];
 
         // Walk up the ancestor chain; stop before root (root has no parent)
         $current = $id;
