@@ -32,12 +32,14 @@ it('imports to_name and subject', function () {
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
-it('imports body text without kludge lines', function () {
+it('imports body text including kludge lines', function () {
     $dataset = Dataset::factory()->create();
-    (new SquishImporter)->import(squishTestBase(), $dataset);
+    // SQUISH/INT/GOLDED has messages with MSGID kludges; STEST1 doesn't
+    (new SquishImporter)->import(base_path('../archive/messages/SQUISH/INT/GOLDED'), $dataset);
 
-    $body = Message::first()->body_text;
-    expect($body)->not->toContain("\x01");
+    // At least one message in this area has MSGID kludges
+    $hasKludge = Message::all()->contains(fn ($m) => str_contains($m->body_text, "\x01"));
+    expect($hasKludge)->toBeTrue();
 });
 
 it('imports posted_at as a valid date', function () {

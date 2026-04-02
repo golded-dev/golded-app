@@ -200,10 +200,8 @@ class JamImporter
     {
         $raw = rtrim($raw, "\x00");
         $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
-        $lines = explode("\n", $raw);
-        $lines = array_filter($lines, fn ($line) => ! str_starts_with($line, "\x01"));
 
-        return implode("\n", array_values($lines));
+        return $raw;
     }
 
     private function toUtf8(string $str, string $charset = 'CP850'): string

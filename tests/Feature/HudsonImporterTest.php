@@ -33,12 +33,12 @@ it('imports to_name and subject', function () {
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
-it('imports body text without kludge lines', function () {
+it('imports body text including kludge lines', function () {
     $dataset = Dataset::factory()->create();
     (new HudsonImporter)->import(hudsonTestBase(), $dataset);
 
     $body = Message::first()->body_text;
-    expect($body)->not->toContain("\x01");
+    expect($body)->toContain("\x01");
 });
 
 it('imports posted_at as a valid date', function () {

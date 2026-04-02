@@ -169,7 +169,9 @@ class SquishImporter
 
             // Charset may be declared in the kludge control block or body
             $charset = CharsetDetector::detect($ctlRaw.$bodyRaw);
-            $body = $this->parseBody($bodyRaw);
+            // Convert Squish control block to standard \x01-prefixed kludge lines,
+            // then prepend to body so they're stored inline like other formats
+            $body = $this->parseCtl($ctlRaw).$this->parseBody($bodyRaw);
 
             // Decode replies[9] array: 9 × uint32 little-endian
             $replies = array_values(unpack('V9', $hdr['replies']));
@@ -210,10 +212,37 @@ class SquishImporter
     {
         $raw = rtrim($raw, "\x00");
         $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
-        $lines = explode("\n", $raw);
-        $lines = array_filter($lines, fn ($line) => ! str_starts_with($line, "\x01"));
 
-        return implode("\n", array_values($lines));
+        return $raw;
+    }
+
+    /**
+     * Convert Squish control block to standard kludge lines.
+     *
+     * Squish stores kludges as: \x01text\x01text\x01... (CTRL_A-delimited, no CR).
+     * Output: \x01text\n per entry, skipping AREA: routing lines.
+     */
+    private function parseCtl(string $ctlRaw): string
+    {
+        $result = '';
+        $i = 0;
+        $len = strlen($ctlRaw);
+
+        while ($i < $len && $ctlRaw[$i] === "\x01" && isset($ctlRaw[$i + 1]) && $ctlRaw[$i + 1] !== "\x00") {
+            $isArea = substr($ctlRaw, $i + 1, 5) === 'AREA:';
+            $i++; // skip leading \x01
+
+            $text = '';
+            while ($i < $len && $ctlRaw[$i] !== "\x01" && $ctlRaw[$i] !== "\x00") {
+                $text .= $ctlRaw[$i++];
+            }
+
+            if (! $isArea && $text !== '') {
+                $result .= "\x01".$text."\n";
+            }
+        }
+
+        return $result;
     }
 
     /**

@@ -177,10 +177,8 @@ class HudsonImporter
         $raw = ltrim($raw, "\xFF");
         $raw = rtrim($raw, "\x00");
         $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
-        $lines = explode("\n", $raw);
-        $lines = array_filter($lines, fn ($line) => ! str_starts_with($line, "\x01"));
 
-        return implode("\n", array_values($lines));
+        return $raw;
     }
 
     /**

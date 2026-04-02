@@ -20,6 +20,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     public int $selectionIndex = 0;
     public int $scrollOffset = 0;
     public int $topOffset = 0;
+    public bool $showKludges = false;
 
     public function mount(): void
     {
@@ -122,6 +123,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             '-'                       => $this->goToParent(),
             '+'                       => $this->goToFirstReply(),
             '*'                       => $this->goToNextSibling(),
+            'k'                       => $this->showKludges = ! $this->showKludges,
             'Escape'                  => $this->backToMessages(),
             default                   => null,
         };
@@ -595,14 +597,17 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         // Word-wrap at 76 chars so content stays within the 78-char content area.
         $rawLines = $msg ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
         $bodyLines = [];
+        $classifier = new LineClassifier;
         foreach ($rawLines as $line) {
+            if (! $this->showKludges && $classifier->classify($line) === LineType::Kludge) {
+                continue;
+            }
             $wrapped = explode("\n", wordwrap($line, 76, "\n", true));
             foreach ($wrapped as $wl) {
                 $bodyLines[] = $wl;
             }
         }
         $visible = array_slice($bodyLines, $this->scrollOffset, 18);
-        $classifier = new LineClassifier;
 
         foreach ($visible as $line) {
             $class = match ($classifier->classify($line)) {

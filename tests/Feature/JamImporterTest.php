@@ -34,12 +34,13 @@ it('imports to_name and subject when present', function () {
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
-it('imports body text without kludge lines', function () {
+it('imports body text including kludge lines', function () {
     $dataset = Dataset::factory()->create();
-    (new JamImporter)->import(jamTestBase(), $dataset);
+    // COLANNOU has messages with MSGID kludges; JTEST1 doesn't
+    (new JamImporter)->import(base_path('../archive/messages/JAM/I/COLANNOU'), $dataset);
 
-    $body = Message::first()->body_text;
-    expect($body)->not->toContain("\x01");
+    $hasKludge = Message::all()->contains(fn ($m) => str_contains($m->body_text, "\x01"));
+    expect($hasKludge)->toBeTrue();
 });
 
 it('imports posted_at as a valid date', function () {

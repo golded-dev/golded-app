@@ -58,7 +58,7 @@ it('imports to_name and subject', function () {
         ->and($msg->subject)->toBe('Keep on the good work..');
 });
 
-it('imports body text without kludge lines', function () {
+it('imports body text including kludge lines', function () {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
@@ -66,8 +66,8 @@ it('imports body text without kludge lines', function () {
     (new MsgImporter)->import($dir, $area);
 
     $body = Message::first()->body_text;
-    expect($body)->not->toContain("\x01")   // no kludge lines
-        ->and($body)->toContain('want');     // real body content
+    expect($body)->toContain("\x01")        // kludge lines preserved
+        ->and($body)->toContain('want');    // real body content still present
 });
 
 it('sets msgno from filename', function () {

@@ -532,3 +532,32 @@ it('applies quote CSS class to quoted lines in reader', function () {
         ->call('handleKey', 'Enter')
         ->assertSee('cga-blue-lgrey'); // Quote1 colour class
 });
+
+it('hides kludge lines in reader by default', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => "\x01MSGID: 1:2/3 deadbeef\nHello world",
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->assertDontSee('cga-dgrey-lgrey'); // kludge colour not present
+});
+
+it('shows kludge lines after pressing K in reader', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => "\x01MSGID: 1:2/3 deadbeef\nHello world",
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'k')
+        ->assertSee('cga-dgrey-lgrey'); // kludge colour now visible
+});
