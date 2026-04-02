@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Import\HudsonImporter;
 use App\Import\JamImporter;
 use App\Import\MsgImporter;
 use App\Import\SquishImporter;
@@ -11,7 +12,7 @@ use Illuminate\Console\Command;
 
 class ImportMessages extends Command
 {
-    protected $signature = 'golded:import {format : Message base format (msg, jam, squish)} {path : Path to message base root}';
+    protected $signature = 'golded:import {format : Message base format (msg, jam, squish, hudson)} {path : Path to message base root}';
 
     protected $description = 'Import messages from a FidoNet message base';
 
@@ -30,6 +31,7 @@ class ImportMessages extends Command
             'msg' => $this->importMsg($path),
             'jam' => $this->importJam($path),
             'squish' => $this->importSquish($path),
+            'hudson' => $this->importHudson($path),
             default => $this->error("Unsupported format: {$format}") ?: self::FAILURE,
         };
     }
@@ -100,6 +102,16 @@ class ImportMessages extends Command
         }
 
         $this->info("Imported {$total} messages.");
+
+        return self::SUCCESS;
+    }
+
+    private function importHudson(string $basePath): int
+    {
+        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'hudson']);
+        $importer = new HudsonImporter;
+        $count = $importer->import($basePath, $dataset);
+        $this->info("Imported {$count} messages.");
 
         return self::SUCCESS;
     }
