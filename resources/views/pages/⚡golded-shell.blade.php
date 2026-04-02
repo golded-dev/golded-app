@@ -610,7 +610,8 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $visible = array_slice($bodyLines, $this->scrollOffset, 18);
 
         foreach ($visible as $line) {
-            $class = match ($classifier->classify($line)) {
+            $type  = $classifier->classify($line);
+            $class = match ($type) {
                 LineType::Kludge   => $dg,
                 LineType::Tearline => $tear,
                 LineType::Origin   => $orig,
@@ -618,7 +619,11 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
                 LineType::Quote2   => $b,
                 LineType::Normal   => $n,
             };
-            $rows[] = $this->row([[' ' . $line, $class]]);
+            // Render \x01 as ☺ (CP437 char 1) to match original GoldED display
+            $display = $type === LineType::Kludge
+                ? str_replace("\x01", '☺', $line)
+                : $line;
+            $rows[] = $this->row([[' ' . $display, $class]]);
         }
 
         for ($i = count($visible); $i < 18; $i++) {
