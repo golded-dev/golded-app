@@ -283,50 +283,61 @@ GoldED uses the 16-colour CGA/EGA palette. Background is always LGREY (`#AAAAAA`
 
 ### 10.1 Area List Screen
 
+Reference: GEDW32 3.0.1 screenshot (archive).
+
 ```
-┌─[GoldED 3.0.1]─────────────── Area List ──── 3 areas, 17 new ─┐  [BORDER/TITLE=RED@LGREY]
-│  #  Description                        Msgs    New  EchoID     │  [HEADER_LABEL=BLUE@LGREY]
-├────────────────────────────────────────────────────────────────┤
-│   1  Goldware Support                   142     12  GOLDED     │  [AREA_NORMAL=BLACK@LGREY]
-│   2  FidoNet.General                     89      5  FIDONET    │
-│►  3  NetMail                             12      2  NETMAIL    │  [AREA_SELECTED=WHITE@BLUE]
-│   4  DK.Snak                             67      0  DK.SNAK    │
-│   5  OS2.General                         34      3  OS2.GEN    │  [AREA_UNREAD=BLUE@LGREY]
-│   6  THE_SAFE                              8      0  THE_SAFE   │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
- GoldED 3.0.1                  Area 3 of 6                13:45:22   [STATUS=WHITE@BLUE]
+┌─[GoldED 3.0.1]──────────────── Area List ──── 22 areas, 411 new ─┐  [RED@LGREY]
+│  #  Area-Description                    Msgs─   New  EchoID              Grp│  [BLUE@LGREY]
+├──────────────────────────────────────────────────────────────────────────────┤
+│  6  REG GoldED reg.sites                1256      3  GOLDED.SITES          S │  [BLACK@LGREY]
+│  7  R20 GoldED Svensk Support Konfer     279     27  R20_GOLDED            R │
+│  8► INT GoldED Beta conference           505    133  GOLDED.BETA           I │  [WHITE@BLUE]
+│  9  R23 GoldED support conference        537    235  GOLDED_R23.PNT        R │  [BLUE@LGREY unread]
+│ 10  INT GoldED support conference        520    278  GOLDED                I │
+│  Netmail areas                                                               │  [LBLUE@LGREY section]
+│ 11  NET Mailer                             4      0  NET.ALL                 │
+│ 12  <I> fdding@winboss.dk e-mail test o   18      0  NET.EMAIL.TEST          │
+│ 13  NET FidoNet Z1                       271      0  NET.FIDOZ1              │
+│ 19  NEI Netmail Wildcat Test (MSG1)        0      0  NET.TESTW               │
+│  E-mail areas                                                                │  [LBLUE@LGREY section]
+│ 20  QWK DataShopper EMail                  0      0  EMAIL.DATASHOP          │
+│ 21  <I> JAVA mailing list                  0      0  IBM-JAVA                │
+│ 24  EMX EMX mailing list                   0      0  LIST.EMX                │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+ GoldED 3.0.1                  Area 8 of 22               22:30:26  [WHITE@BLUE]
 ```
 
-**Column layout (80 columns, borders inclusive):**
+**Column layout (80 columns, borders inclusive, 78 content chars between `│`):**
 
 | Col | Width | Field |
 |-----|-------|-------|
-| 1–4 | 4 | Area number (right-justified) |
-| 5 | 1 | Marked indicator (`■` or space) |
-| 6–35 | 30 | Description (left-justified, truncated) |
-| 36 | 1 | Personal mark indicator |
-| 37–43 | 7 | Message count (right-justified, `-` if unscanned) |
-| 44 | 1 | Changed/unread indicator |
-| 45–51 | 7 | New/unread count (right-justified, `-` if unscanned) |
-| 52 | 1 | Space |
-| 53–68 | 16 | EchoID (left-justified, truncated) |
-| 69–71 | 3 | Group ID |
+| 1–3 | 3 | Area number (right-justified) |
+| 4 | 1 | Selection indicator (`►` or space) |
+| 5 | 1 | Space |
+| 6–8 | 3 | Area type code (`REG`, `NET`, `<I>`, etc.) |
+| 9 | 1 | Space |
+| 10–38 | 29 | Description (left-justified, truncated) |
+| 39 | 1 | Space |
+| 40–45 | 6 | Message count (right-justified, `-` if unscanned) |
+| 46 | 1 | Changed indicator (space normally) |
+| 47–52 | 6 | Unread count (right-justified, `-` if unscanned) |
+| 53 | 1 | Space |
+| 54–73 | 20 | EchoID (left-justified, truncated) |
+| 74 | 1 | Space |
+| 75–78 | 4 | Group ID (single char left-justified, rest spaces) |
+
+**Section headers:**
+
+When areas are sorted by type (`T` key in `AREALISTSORT`), a label row is injected at each type-group boundary. The row spans the full 78-char content width, indented by 2 spaces, rendered in `LBLUE@LGREY`. It does not count as a selectable row.
+
+| Condition | Label |
+|-----------|-------|
+| First NET or NEI area | `Netmail areas` |
+| First QWK or `<I>` area | `E-mail areas` |
+| First LOCAL area | `Local areas` |
+
+Section headers only appear when that type group is present and the sort order includes `T`.
 
 **Sort order (`AREALISTSORT`):**
 
@@ -395,55 +406,59 @@ Source: `geglob.cpp` default `"FYTUE"`, confirmed in `archive/config/GOLDAREA.CF
 
 ### 10.3 Reader Screen
 
+Reference: GEDW32 2.23b screenshot (archive).
+
 ```
-┌─[3] NetMail ──────────────────────────── 2:236/77 ── NETMAIL ─┐  [BORDER=YELLOW@LGREY,TITLE=RED@LGREY]
-│ Msg: 3 of 12  -1 *4                                 13 Mar 94 │  [HEADER_LABEL=BLUE@LGREY]
-│ From: Odinn Sorensen                      2:236/77             │
-│ To  : Lars Jensen                         2:236/105            │
-│ Subj: Re: GoldED keybindings                                   │
-├────────────────────────────────────────────────────────────────┤  [BORDER=YELLOW@LGREY]
-│                                                                │  [BODY_NORMAL=BLACK@LGREY]
-│ Lars Jensen wrote:                                             │
-│                                                                │
-│ > I noticed the key binding for AREA select seems odd —        │  [BODY_QUOTE1=BLUE@LGREY]
-│ > pressing Right should open the area but it doesn't?          │
-│                                                                │
-│ Right/Enter both work for AREAselect. Check your GOLDKEYS.CFG. │
-│ The default binding has both mapped:                           │
-│                                                                │
-│   Right  → AREAselect                                          │
-│   Enter  → AREAselect                                          │
-│                                                                │
-│ Let me know if you're still stuck.                             │
-│                                                                │
-│ --- GoldED 3.0.1 Beta 3                                        │  [BODY_TEARLINE=LBLUE@LGREY]
-│  * Origin: Goldware BBS, Haslev (2:236/77)                     │  [BODY_ORIGIN=LBLUE@LGREY]
-└────────────────────────────────────────────────────────────────┘
- GoldED 3.0.1                  Msg 3 of 12 (2 new)       13:45:22  [STATUS=WHITE@BLUE]
+┌─ <I> Funny Humor (Moderated) (2:236/77) ────────── REC.HUMOR.FUNNY ─┐  [RED@LGREY]
+│ Msg: 260 of 290                                                      │  [BLUE@LGREY]
+│ From: Elan Feingold <feingold@avette.zko.dec.com>  Tue 08 Aug 95 04:30 │
+│ To  : ALL                                          Fri 11 Aug 95 02:21 │
+│ Subj: How to get rid of unwanted phone calls.                         │
+│ 1450                                                                  │
+├──────────────────────────────────────────────────────────────────────┤  [YELLOW@LGREY]
+│                                                                      │  [BLACK@LGREY]
+│ I was just stepping into the shower this morning when my SO          │
+│ handed me the phone, telling me it was someone from a long           │
+│ distance company.                                                     │
+│                                                                      │
+│ Me:  Hello?                                                           │
+│ Him: Hello, sir. I'm from <Major long distance carrier>.             │
+│                                                                      │
+│ --- GoldED 2.23b                                                      │  [LBLUE@LGREY]
+│  * Origin: Somewhere (2:236/77)                                       │  [LBLUE@LGREY]
+└──────────────────────────────────────────────────────────────────────┘
+ GoldED 3.0.1             Read:ALL  Msg 260 of 290 (39 left)  16:11:57  [WHITE@BLUE]
 ```
 
-**Header row layout (rows 0–5):**
+**Header row layout (rows 0–6):**
 
 | Row | Content | Notes |
 |-----|---------|-------|
-| 0 | `[AreaNo] Area Description ── AKA ── EchoID` | Top border with info |
-| 1 | `Msg: N of Total  -replyto +reply1 *next  Date` | Counter + links |
-| 2 | `From: Name  Address` | From line |
-| 3 | `To  : Name  Address` | To line |
-| 4 | `Subj: Subject text` or `File: filename` | Subject or file |
-| 5 | Separator (`├────...────┤`) | Divides header from body |
+| 0 | `<type> <Area Name> (<nodeaddr>)  …  <EchoID>` | Top border. Type code + name + local AKA on left, echoid on right. |
+| 1 | `Msg: N of Total` | Counter only. Reply links (`-prev +next *thread`) shown here when present. |
+| 2 | `From: Name <address>`  +  written date right-aligned | Full internet address when present. Date: `Ddd DD Mon YY HH:MM`. |
+| 3 | `To  : Name` + received/arrival date right-aligned | Second date is the arrival date (`MSGSCANNED` or kludge). |
+| 4 | `Subj: Subject text` | |
+| 5 | Message byte count (e.g. `1450`) | Raw size of the message body in bytes. |
+| 6 | Separator (`├────...────┤`) | Divides header from body. |
+
+**Date format:**
+
+`Ddd DD Mon YY HH:MM` — e.g. `Tue 08 Aug 95 04:30`.  
+Row 2 shows the **written** date (from the message header).  
+Row 3 shows the **arrival** date (from kludge line `MSGID`, `INTL`, or filesystem timestamp). If absent, row 3 date is blank.
 
 **Row 1 counter format (from `geview.cpp`):**
 ```
-Relative mode : " Msg: 3 of 12"
-Real msgno    : " Msg: #4729 [12]"
+Relative mode : "Msg: 3 of 12"
+Real msgno    : "Msg: #4729 [12]"
 Reply links   : " -2" (replyto), " +4" (reply), " *5" (replynext)
 ```
 
 **Address column positions (from `GOLDED.CFG` defaults):**
 ```
 DISPHDRNAMESET   8 28    → col 8, 28 chars for name
-DISPHDRNODESET  36 24    → col 36, 24 chars for FTN/email address
+DISPHDRNODESET  36 24    → col 36, 24 chars for FTN/email/internet address
 DISPHDRDATESET -20 20    → 20 chars from right edge for date
 ```
 

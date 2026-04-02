@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\LineClassifier;
+use App\Domain\LineType;
 use App\Domain\ThreadTree;
 use App\Models\Area;
 use App\Models\Dataset;
@@ -65,8 +67,12 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     {
         $count = $this->areas->count();
         match ($key) {
-            'ArrowDown' => $this->selectionIndex = min($this->selectionIndex + 1, max(0, $count - 1)),
-            'ArrowUp'   => $this->selectionIndex = max(0, $this->selectionIndex - 1),
+            'ArrowDown'  => $this->selectionIndex = min($this->selectionIndex + 1, max(0, $count - 1)),
+            'ArrowUp'    => $this->selectionIndex = max(0, $this->selectionIndex - 1),
+            'PageDown'   => $this->selectionIndex = min($this->selectionIndex + 20, max(0, $count - 1)),
+            'PageUp'     => $this->selectionIndex = max(0, $this->selectionIndex - 20),
+            'Home'       => $this->selectionIndex = 0,
+            'End'        => $this->selectionIndex = max(0, $count - 1),
             'ArrowRight', 'Enter' => $this->openArea(),
             default => null,
         };
@@ -79,6 +85,10 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         match ($key) {
             'ArrowDown'  => $this->selectionIndex = min($this->selectionIndex + 1, max(0, $count - 1)),
             'ArrowUp'    => $this->selectionIndex = max(0, $this->selectionIndex - 1),
+            'PageDown'   => $this->selectionIndex = min($this->selectionIndex + 20, max(0, $count - 1)),
+            'PageUp'     => $this->selectionIndex = max(0, $this->selectionIndex - 20),
+            'Home'       => $this->selectionIndex = 0,
+            'End'        => $this->selectionIndex = max(0, $count - 1),
             'Enter'      => $this->openMessage(),
             'ArrowLeft', 'Escape' => $this->backToAreas(),
             default => null,
@@ -101,11 +111,17 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         match ($key) {
             'ArrowDown'               => $this->scrollOffset++,
             'ArrowUp'                 => $this->scrollOffset = max(0, $this->scrollOffset - 1),
+            'PageDown'                => $this->scrollOffset += 18,
+            'PageUp'                  => $this->scrollOffset = max(0, $this->scrollOffset - 18),
+            'Home'                    => $this->scrollOffset = 0,
             'ArrowRight'              => $this->nextMessage(),
             'ArrowLeft'               => $this->prevMessage(),
             'Alt+ArrowRight', 'Alt+u' => $this->nextUnreadMessage(),
             'Alt+ArrowLeft'           => $this->prevUnreadMessage(),
             'Alt+j'                   => $this->toggleReadUnread(),
+            '-'                       => $this->goToParent(),
+            '+'                       => $this->goToFirstReply(),
+            '*'                       => $this->goToNextSibling(),
             'Escape'                  => $this->backToMessages(),
             default                   => null,
         };
@@ -232,6 +248,45 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $this->markUnread($this->messageId);
         } else {
             $this->markRead($this->messageId);
+        }
+    }
+
+    private function goToParent(): void
+    {
+        $current = $this->currentMessage;
+        if (! $current?->reply_to_msgno) {
+            return;
+        }
+        $parent = Message::where('area_id', $this->areaId)->where('msgno', $current->reply_to_msgno)->first();
+        if ($parent) {
+            $this->messageId    = $parent->id;
+            $this->scrollOffset = 0;
+        }
+    }
+
+    private function goToFirstReply(): void
+    {
+        $current = $this->currentMessage;
+        if (! $current?->reply1st_msgno) {
+            return;
+        }
+        $reply = Message::where('area_id', $this->areaId)->where('msgno', $current->reply1st_msgno)->first();
+        if ($reply) {
+            $this->messageId    = $reply->id;
+            $this->scrollOffset = 0;
+        }
+    }
+
+    private function goToNextSibling(): void
+    {
+        $current = $this->currentMessage;
+        if (! $current?->replynext_msgno) {
+            return;
+        }
+        $sibling = Message::where('area_id', $this->areaId)->where('msgno', $current->replynext_msgno)->first();
+        if ($sibling) {
+            $this->messageId    = $sibling->id;
+            $this->scrollOffset = 0;
         }
     }
 
@@ -547,9 +602,18 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             }
         }
         $visible = array_slice($bodyLines, $this->scrollOffset, 18);
+        $classifier = new LineClassifier;
 
         foreach ($visible as $line) {
-            $rows[] = $this->row([[' ' . $line, $n]]);
+            $class = match ($classifier->classify($line)) {
+                LineType::Kludge   => $dg,
+                LineType::Tearline => $tear,
+                LineType::Origin   => $orig,
+                LineType::Quote1   => $q1,
+                LineType::Quote2   => $b,
+                LineType::Normal   => $n,
+            };
+            $rows[] = $this->row([[' ' . $line, $class]]);
         }
 
         for ($i = count($visible); $i < 18; $i++) {

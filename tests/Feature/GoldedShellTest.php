@@ -358,3 +358,177 @@ it('renders area names from the database', function () {
         ->assertSee('Galactic Transmissions')
         ->assertSee('Interplanetary Gossip');
 });
+
+// ── PgUp / PgDn / Home / End ──────────────────────────────────────────────────
+
+it('jumps selection forward 20 on PageDown in area list', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->count(25)->create();
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'PageDown')
+        ->assertSet('selectionIndex', 20);
+});
+
+it('clamps PageDown at last area', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->count(5)->create();
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'PageDown')
+        ->assertSet('selectionIndex', 4);
+});
+
+it('jumps selection to 0 on Home in area list', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->count(5)->create();
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'ArrowDown')
+        ->call('handleKey', 'ArrowDown')
+        ->call('handleKey', 'Home')
+        ->assertSet('selectionIndex', 0);
+});
+
+it('jumps selection to last on End in area list', function () {
+    $dataset = Dataset::factory()->create();
+    Area::factory()->for($dataset)->count(5)->create();
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'End')
+        ->assertSet('selectionIndex', 4);
+});
+
+it('jumps selection forward 20 on PageDown in message list', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->count(25)->sequence(fn ($s) => ['msgno' => $s->index + 1])->create();
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter') // open area
+        ->call('handleKey', 'PageDown')
+        ->assertSet('selectionIndex', 20);
+});
+
+it('scrolls reader body forward 18 lines on PageDown', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => implode("\n", array_fill(0, 40, 'line')),
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'PageDown')
+        ->assertSet('scrollOffset', 18);
+});
+
+it('scrolls reader body back 18 lines on PageUp', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => implode("\n", array_fill(0, 40, 'line')),
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'PageDown')
+        ->call('handleKey', 'PageDown')
+        ->call('handleKey', 'PageUp')
+        ->assertSet('scrollOffset', 18);
+});
+
+it('jumps reader to top on Home', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => implode("\n", array_fill(0, 40, 'line')),
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'PageDown')
+        ->call('handleKey', 'Home')
+        ->assertSet('scrollOffset', 0);
+});
+
+// ── Reply navigation ──────────────────────────────────────────────────────────
+
+it('navigates to parent message with -', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    $parent = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1]);
+    $reply = Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 2,
+        'reply_to_msgno' => 1,
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')          // open area
+        ->call('handleKey', 'ArrowDown')       // select reply (index 1)
+        ->call('handleKey', 'Enter')           // open reply in reader
+        ->call('handleKey', '-')               // go to parent
+        ->assertSet('messageId', $parent->id);
+});
+
+it('does nothing on - when message has no parent', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    $msg = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'reply_to_msgno' => null]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', '-')
+        ->assertSet('messageId', $msg->id);
+});
+
+it('navigates to first reply with +', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    $parent = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
+    $reply = Message::factory()->for($area)->for($dataset)->create(['msgno' => 2, 'reply_to_msgno' => 1]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter') // open parent
+        ->call('handleKey', '+')
+        ->assertSet('messageId', $reply->id);
+});
+
+it('navigates to next sibling with *', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    $parent = Message::factory()->for($area)->for($dataset)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
+    $first = Message::factory()->for($area)->for($dataset)->create(['msgno' => 2, 'reply_to_msgno' => 1, 'replynext_msgno' => 3]);
+    $second = Message::factory()->for($area)->for($dataset)->create(['msgno' => 3, 'reply_to_msgno' => 1]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'ArrowDown') // select msg 2
+        ->call('handleKey', 'Enter')     // open first reply
+        ->call('handleKey', '*')         // jump to sibling
+        ->assertSet('messageId', $second->id);
+});
+
+// ── Quote colouring ───────────────────────────────────────────────────────────
+
+it('applies quote CSS class to quoted lines in reader', function () {
+    $dataset = Dataset::factory()->create();
+    $area = Area::factory()->for($dataset)->create(['sort_order' => 1]);
+    Message::factory()->for($area)->for($dataset)->create([
+        'msgno' => 1,
+        'body_text' => "> This is a quote\nAnd this is normal text",
+    ]);
+
+    Livewire::test('pages::golded-shell')
+        ->call('handleKey', 'Enter')
+        ->call('handleKey', 'Enter')
+        ->assertSee('cga-blue-lgrey'); // Quote1 colour class
+});
