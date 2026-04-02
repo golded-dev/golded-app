@@ -2,6 +2,7 @@
 
 namespace App\Import;
 
+use App\Domain\CharsetDetector;
 use App\Models\Area;
 use App\Models\Dataset;
 use App\Models\Message;
@@ -137,18 +138,19 @@ class JamImporter
             // Read body from JDT
             fseek($fdt, $hdr['offset']);
             $bodyRaw = $hdr['txtlen'] > 0 ? fread($fdt, $hdr['txtlen']) : '';
+            $charset = CharsetDetector::detect($bodyRaw);
             $body = $this->parseBody($bodyRaw);
 
             $records[] = [
                 'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $hdr['messagenumber'],
-                'from_name' => $this->toUtf8($fields[self::JAMSUB_SENDERNAME] ?? ''),
+                'from_name' => $this->toUtf8($fields[self::JAMSUB_SENDERNAME] ?? '', $charset),
                 'from_address' => $fields[self::JAMSUB_OADDRESS] ?? null,
-                'to_name' => $this->toUtf8($fields[self::JAMSUB_RECEIVERNAME] ?? ''),
+                'to_name' => $this->toUtf8($fields[self::JAMSUB_RECEIVERNAME] ?? '', $charset),
                 'to_address' => $fields[self::JAMSUB_DADDRESS] ?? null,
-                'subject' => $this->toUtf8($fields[self::JAMSUB_SUBJECT] ?? ''),
-                'body_text' => $this->toUtf8($body),
+                'subject' => $this->toUtf8($fields[self::JAMSUB_SUBJECT] ?? '', $charset),
+                'body_text' => $this->toUtf8($body, $charset),
                 'attributes_raw' => $hdr['attribute'],
                 'reply_to_msgno' => $hdr['replyto'] ?: null,
                 'reply1st_msgno' => $hdr['reply1st'] ?: null,
@@ -204,9 +206,9 @@ class JamImporter
         return implode("\n", array_values($lines));
     }
 
-    private function toUtf8(string $str): string
+    private function toUtf8(string $str, string $charset = 'CP850'): string
     {
-        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', 'CP850');
+        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', $charset);
     }
 
     /** Find a file case-insensitively by extension. */

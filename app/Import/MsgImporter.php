@@ -2,6 +2,7 @@
 
 namespace App\Import;
 
+use App\Domain\CharsetDetector;
 use App\Models\Area;
 use App\Models\Message;
 use Carbon\Carbon;
@@ -61,16 +62,18 @@ class MsgImporter
         $subject = $this->readField($raw, 72, 72);
         $dateStr = $this->readField($raw, 144, 20);
         $attr = unpack('v', substr($raw, 186, 2))[1];
-        $body = $this->parseBody(substr($raw, self::HEADER_SIZE));
+        $bodyRaw = substr($raw, self::HEADER_SIZE);
+        $charset = CharsetDetector::detect($bodyRaw);
+        $body = $this->parseBody($bodyRaw);
 
         Message::create([
             'dataset_id' => $area->dataset_id,
             'area_id' => $area->id,
             'msgno' => $msgno,
-            'subject' => $this->toUtf8($subject),
-            'from_name' => $this->toUtf8($fromName),
-            'to_name' => $this->toUtf8($toName),
-            'body_text' => $this->toUtf8($body),
+            'subject' => $this->toUtf8($subject, $charset),
+            'from_name' => $this->toUtf8($fromName, $charset),
+            'to_name' => $this->toUtf8($toName, $charset),
+            'body_text' => $this->toUtf8($body, $charset),
             'attributes_raw' => $attr,
             'posted_at' => $this->parseDate($dateStr),
         ]);
@@ -105,9 +108,9 @@ class MsgImporter
         return implode("\n", array_values($lines));
     }
 
-    private function toUtf8(string $str): string
+    private function toUtf8(string $str, string $charset = 'CP850'): string
     {
-        return mb_convert_encoding($str, 'UTF-8', 'CP850');
+        return mb_convert_encoding($str, 'UTF-8', $charset);
     }
 
     private function parseDate(string $dateStr): ?Carbon

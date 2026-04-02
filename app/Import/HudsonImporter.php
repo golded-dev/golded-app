@@ -2,6 +2,7 @@
 
 namespace App\Import;
 
+use App\Domain\CharsetDetector;
 use App\Models\Area;
 use App\Models\Dataset;
 use App\Models\Message;
@@ -129,16 +130,17 @@ class HudsonImporter
             // Read body text
             fseek($ftxt, $hdr['startrec'] * self::TXT_RECORD);
             $txtRaw = $hdr['numrecs'] > 0 ? fread($ftxt, $hdr['numrecs'] * self::TXT_RECORD) : '';
+            $charset = CharsetDetector::detect($txtRaw);
             $body = $this->parseBody($txtRaw);
 
             $records[] = [
                 'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $hdr['msgno'],
-                'from_name' => $this->toUtf8(substr($hdr['by'], 1)),
-                'to_name' => $this->toUtf8(substr($hdr['to'], 1)),
-                'subject' => $this->toUtf8(substr($hdr['re'], 1)),
-                'body_text' => $this->toUtf8($body),
+                'from_name' => $this->toUtf8(substr($hdr['by'], 1), $charset),
+                'to_name' => $this->toUtf8(substr($hdr['to'], 1), $charset),
+                'subject' => $this->toUtf8(substr($hdr['re'], 1), $charset),
+                'body_text' => $this->toUtf8($body, $charset),
                 'attributes_raw' => $hdr['msgattr'] | ($hdr['netattr'] << 8),
                 'reply_to_msgno' => $hdr['replyto'] ?: null,
                 'reply1st_msgno' => $hdr['reply1st'] ?: null,
@@ -204,9 +206,9 @@ class HudsonImporter
         return $dt ?: null;
     }
 
-    private function toUtf8(string $str): string
+    private function toUtf8(string $str, string $charset = 'CP850'): string
     {
-        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', 'CP850');
+        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', $charset);
     }
 
     private function findFile(string $dir, string $filename): ?string

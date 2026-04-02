@@ -2,6 +2,7 @@
 
 namespace App\Import;
 
+use App\Domain\CharsetDetector;
 use App\Models\Area;
 use App\Models\Dataset;
 use App\Models\Message;
@@ -166,6 +167,8 @@ class SquishImporter
             $txtSize = $frm['totsize'] - self::HDR_SIZE - $frm['ctlsize'];
             $bodyRaw = $txtSize > 0 ? fread($fsqd, $txtSize) : '';
 
+            // Charset may be declared in the kludge control block or body
+            $charset = CharsetDetector::detect($ctlRaw.$bodyRaw);
             $body = $this->parseBody($bodyRaw);
 
             // Decode replies[9] array: 9 × uint32 little-endian
@@ -175,10 +178,10 @@ class SquishImporter
                 'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $idx['msgno'],
-                'from_name' => $this->toUtf8($hdr['from']),
-                'to_name' => $this->toUtf8($hdr['to']),
-                'subject' => $this->toUtf8($hdr['subj']),
-                'body_text' => $this->toUtf8($body),
+                'from_name' => $this->toUtf8($hdr['from'], $charset),
+                'to_name' => $this->toUtf8($hdr['to'], $charset),
+                'subject' => $this->toUtf8($hdr['subj'], $charset),
+                'body_text' => $this->toUtf8($body, $charset),
                 'attributes_raw' => $hdr['attr'],
                 'reply_to_msgno' => $hdr['replyto'] ?: null,
                 'reply1st_msgno' => $replies[0] ?: null,
@@ -244,9 +247,9 @@ class SquishImporter
         return Carbon::create($year, $month, $day, $hour, $min, $sec);
     }
 
-    private function toUtf8(string $str): string
+    private function toUtf8(string $str, string $charset = 'CP850'): string
     {
-        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', 'CP850');
+        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', $charset);
     }
 
     private function findFile(string $basePath, string $ext): ?string
