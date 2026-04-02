@@ -10,6 +10,7 @@ use Carbon\Carbon;
 
 class SquishImporter
 {
+    use ReadsGoldedConfig;
     // .SQD layout:
     //   0-255     SqshBase (256 bytes)
     //   256+      frames (linked list)
@@ -168,7 +169,7 @@ class SquishImporter
             $bodyRaw = $txtSize > 0 ? fread($fsqd, $txtSize) : '';
 
             // Charset may be declared in the kludge control block or body
-            $charset = CharsetDetector::detect($ctlRaw.$bodyRaw);
+            $charset = CharsetDetector::detect($ctlRaw.$bodyRaw, $this->areaFallbackCharset($area->code));
             // Convert Squish control block to standard \x01-prefixed kludge lines,
             // then prepend to body so they're stored inline like other formats
             $body = $this->parseCtl($ctlRaw).$this->parseBody($bodyRaw);

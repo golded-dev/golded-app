@@ -10,6 +10,7 @@ use Carbon\Carbon;
 
 class HudsonImporter
 {
+    use ReadsGoldedConfig;
     // Hudson message base (all files in one flat directory):
     //
     // MSGIDX.BBS  — one 3-byte record per message, in order:
@@ -130,7 +131,7 @@ class HudsonImporter
             // Read body text
             fseek($ftxt, $hdr['startrec'] * self::TXT_RECORD);
             $txtRaw = $hdr['numrecs'] > 0 ? fread($ftxt, $hdr['numrecs'] * self::TXT_RECORD) : '';
-            $charset = CharsetDetector::detect($txtRaw);
+            $charset = CharsetDetector::detect($txtRaw, $this->areaFallbackCharset($areas[$board]->code));
             $body = $this->parseBody($txtRaw);
 
             $records[] = [

@@ -49,14 +49,14 @@ class CharsetDetector
      * Scans for the first \x01CHRS: or \x01CHARSET: kludge line.
      * Returns 'CP850' if none found or the charset name is unrecognised.
      */
-    public static function detect(string $rawBody): string
+    public static function detect(string $rawBody, string $fallback = 'CP850'): string
     {
         if (preg_match('/\x01(?:CHRS|CHARSET):\s*(\S+)/i', $rawBody, $m)) {
             $name = strtoupper($m[1]);
 
-            return self::MAP[$name] ?? 'CP850';
+            return self::MAP[$name] ?? $fallback;
         }
 
-        return 'CP850';
+        return $fallback;
     }
 }

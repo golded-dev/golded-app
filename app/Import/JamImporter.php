@@ -10,6 +10,7 @@ use Carbon\Carbon;
 
 class JamImporter
 {
+    use ReadsGoldedConfig;
     // JHR file layout:
     //   0-1023   JamHdrInfo (file header, 1024 bytes)
     //   1024+    JamHdr (76 bytes) + subfieldlen bytes, repeated per message
@@ -138,7 +139,7 @@ class JamImporter
             // Read body from JDT
             fseek($fdt, $hdr['offset']);
             $bodyRaw = $hdr['txtlen'] > 0 ? fread($fdt, $hdr['txtlen']) : '';
-            $charset = CharsetDetector::detect($bodyRaw);
+            $charset = CharsetDetector::detect($bodyRaw, $this->areaFallbackCharset($area->code));
             $body = $this->parseBody($bodyRaw);
 
             $records[] = [

@@ -9,6 +9,7 @@ use Carbon\Carbon;
 
 class MsgImporter
 {
+    use ReadsGoldedConfig;
     // .MSG header layout (190 bytes total):
     //   0-35   from_name   (36 bytes, null-padded)
     //  36-71   to_name     (36 bytes, null-padded)
@@ -63,7 +64,7 @@ class MsgImporter
         $dateStr = $this->readField($raw, 144, 20);
         $attr = unpack('v', substr($raw, 186, 2))[1];
         $bodyRaw = substr($raw, self::HEADER_SIZE);
-        $charset = CharsetDetector::detect($bodyRaw);
+        $charset = CharsetDetector::detect($bodyRaw, $this->areaFallbackCharset($area->code));
         $body = $this->parseBody($bodyRaw);
 
         Message::create([
