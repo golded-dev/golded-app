@@ -619,9 +619,9 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
                 LineType::Quote2   => $b,
                 LineType::Normal   => $n,
             };
-            // Render \x01 as ☺ (CP437 char 1) to match original GoldED display
+            // Render \x01 as '@' to match original GoldED display
             $display = $type === LineType::Kludge
-                ? str_replace("\x01", '☺', $line)
+                ? str_replace("\x01", '@', $line)
                 : $line;
             $rows[] = $this->row([[' ' . $display, $class]]);
         }
