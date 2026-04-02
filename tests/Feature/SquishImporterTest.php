@@ -73,3 +73,14 @@ it('imports a Squish area via artisan command', function () {
 
     expect(Message::count())->toBeGreaterThan(0);
 });
+
+it('--fresh wipes and re-imports without duplicating messages', function () {
+    $path = base_path('../archive/messages/SQUISH/TEST');
+
+    $this->artisan("golded:import squish {$path}")->assertExitCode(0);
+    $countAfterFirst = Message::count();
+
+    $this->artisan("golded:import squish {$path} --fresh")->assertExitCode(0);
+
+    expect(Message::count())->toBe($countAfterFirst);
+});

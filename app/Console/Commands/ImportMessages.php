@@ -12,7 +12,7 @@ use Illuminate\Console\Command;
 
 class ImportMessages extends Command
 {
-    protected $signature = 'golded:import {format : Message base format (msg, jam, squish, hudson)} {path : Path to message base root}';
+    protected $signature = 'golded:import {format : Message base format (msg, jam, squish, hudson)} {path : Path to message base root} {--fresh : Delete existing dataset before importing}';
 
     protected $description = 'Import messages from a FidoNet message base';
 
@@ -36,9 +36,23 @@ class ImportMessages extends Command
         };
     }
 
+    /**
+     * If --fresh, delete the existing dataset (cascades to areas + messages)
+     * then return a fresh one. Otherwise firstOrCreate as usual.
+     */
+    private function resolveDataset(string $name, string $sourceType): Dataset
+    {
+        if ($this->option('fresh')) {
+            Dataset::where('name', $name)->delete();
+            $this->line("  Dropped existing dataset '{$name}'.");
+        }
+
+        return Dataset::firstOrCreate(['name' => $name], ['source_type' => $sourceType]);
+    }
+
     private function importMsg(string $basePath): int
     {
-        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'msg']);
+        $dataset = $this->resolveDataset(basename($basePath), 'msg');
         $importer = new MsgImporter;
         $total = 0;
         $areaDirs = glob("{$basePath}/*", GLOB_ONLYDIR) ?: [];
@@ -62,7 +76,7 @@ class ImportMessages extends Command
 
     private function importJam(string $basePath): int
     {
-        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'jam']);
+        $dataset = $this->resolveDataset(basename($basePath), 'jam');
         $importer = new JamImporter;
         $total = 0;
         $count = 0;
@@ -86,7 +100,7 @@ class ImportMessages extends Command
 
     private function importSquish(string $basePath): int
     {
-        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'squish']);
+        $dataset = $this->resolveDataset(basename($basePath), 'squish');
         $importer = new SquishImporter;
         $total = 0;
 
@@ -108,7 +122,7 @@ class ImportMessages extends Command
 
     private function importHudson(string $basePath): int
     {
-        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'hudson']);
+        $dataset = $this->resolveDataset(basename($basePath), 'hudson');
         $importer = new HudsonImporter;
         $count = $importer->import($basePath, $dataset);
         $this->info("Imported {$count} messages.");
