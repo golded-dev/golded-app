@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Import\JamImporter;
 use App\Import\MsgImporter;
+use App\Import\SquishImporter;
 use App\Models\Area;
 use App\Models\Dataset;
 use Illuminate\Console\Command;
@@ -28,6 +29,7 @@ class ImportMessages extends Command
         return match ($format) {
             'msg' => $this->importMsg($path),
             'jam' => $this->importJam($path),
+            'squish' => $this->importSquish($path),
             default => $this->error("Unsupported format: {$format}") ?: self::FAILURE,
         };
     }
@@ -78,6 +80,47 @@ class ImportMessages extends Command
         $this->info("Imported {$total} messages.");
 
         return self::SUCCESS;
+    }
+
+    private function importSquish(string $basePath): int
+    {
+        $dataset = Dataset::firstOrCreate(['name' => basename($basePath)], ['source_type' => 'squish']);
+        $importer = new SquishImporter;
+        $total = 0;
+
+        // Find all .SQD/.sqd files in $basePath and one level of subdirs
+        $sqdFiles = $this->findSqdFiles($basePath);
+
+        foreach ($sqdFiles as $sqdFile) {
+            $base = preg_replace('/\.(SQD|sqd)$/', '', $sqdFile);
+            $count = $importer->import($base, $dataset);
+            $areaName = strtoupper(basename($base));
+            $this->line("  {$areaName}: {$count} messages");
+            $total += $count;
+        }
+
+        $this->info("Imported {$total} messages.");
+
+        return self::SUCCESS;
+    }
+
+    /** Find all .SQD files in $dir and one level of subdirectories. */
+    private function findSqdFiles(string $dir): array
+    {
+        $files = array_merge(
+            glob("{$dir}/*.SQD") ?: [],
+            glob("{$dir}/*.sqd") ?: [],
+        );
+
+        foreach (glob("{$dir}/*", GLOB_ONLYDIR) ?: [] as $sub) {
+            $files = array_merge(
+                $files,
+                glob("{$sub}/*.SQD") ?: [],
+                glob("{$sub}/*.sqd") ?: [],
+            );
+        }
+
+        return array_unique($files);
     }
 
     /** Find all .JHR files in $dir and one level of subdirectories. */
