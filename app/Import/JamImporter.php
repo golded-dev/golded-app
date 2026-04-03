@@ -4,7 +4,6 @@ namespace App\Import;
 
 use App\Domain\CharsetDetector;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Carbon\Carbon;
 
@@ -64,10 +63,10 @@ class JamImporter
 
     /**
      * Import all messages from a JAM base (path without extension).
-     * e.g. import('/path/to/NETMAIL', $dataset)
+     * e.g. import('/path/to/NETMAIL')
      * Returns count of messages imported.
      */
-    public function import(string $basePath, Dataset $dataset): int
+    public function import(string $basePath): int
     {
         $jhrPath = $this->findFile($basePath, 'jhr');
         $jdtPath = $this->findFile($basePath, 'jdt');
@@ -78,7 +77,7 @@ class JamImporter
 
         $areaName = strtoupper(basename($basePath));
         $area = Area::firstOrCreate(
-            ['dataset_id' => $dataset->id, 'code' => $areaName],
+            ['code' => $areaName, 'source_type' => 'jam'],
             ['name' => $areaName, 'sort_order' => 0],
         );
 
@@ -86,7 +85,7 @@ class JamImporter
         $fdt = fopen($jdtPath, 'rb');
 
         try {
-            $count = $this->importMessages($fhr, $fdt, $area, $dataset);
+            $count = $this->importMessages($fhr, $fdt, $area);
         } finally {
             fclose($fhr);
             fclose($fdt);
@@ -97,7 +96,7 @@ class JamImporter
         return $count;
     }
 
-    private function importMessages($fhr, $fdt, Area $area, Dataset $dataset): int
+    private function importMessages($fhr, $fdt, Area $area): int
     {
         // Skip file header
         $info = fread($fhr, self::JAMHDRINFO_SIZE);
@@ -143,7 +142,6 @@ class JamImporter
             $body = $this->parseBody($bodyRaw);
 
             $records[] = [
-                'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $hdr['messagenumber'],
                 'from_name' => $this->toUtf8($fields[self::JAMSUB_SENDERNAME] ?? '', $charset),

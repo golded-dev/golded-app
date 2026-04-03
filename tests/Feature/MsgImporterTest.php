@@ -2,7 +2,6 @@
 
 use App\Import\MsgImporter;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -35,9 +34,7 @@ afterEach(function () {
 it('imports from_name from a real .msg file', function () {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
-
-    $dataset = Dataset::factory()->create();
-    $area = Area::factory()->create(['dataset_id' => $dataset->id]);
+    $area = Area::factory()->create([]);
 
     (new MsgImporter)->import($dir, $area);
 
@@ -50,7 +47,7 @@ it('imports to_name and subject', function () {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
-    $area = Area::factory()->create(['dataset_id' => Dataset::factory()->create()->id]);
+    $area = Area::factory()->create();
     (new MsgImporter)->import($dir, $area);
 
     $msg = Message::first();
@@ -62,7 +59,7 @@ it('imports body text including kludge lines', function () {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
-    $area = Area::factory()->create(['dataset_id' => Dataset::factory()->create()->id]);
+    $area = Area::factory()->create();
     (new MsgImporter)->import($dir, $area);
 
     $body = Message::first()->body_text;
@@ -74,7 +71,7 @@ it('sets msgno from filename', function () {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
-    $area = Area::factory()->create(['dataset_id' => Dataset::factory()->create()->id]);
+    $area = Area::factory()->create();
     (new MsgImporter)->import($dir, $area);
 
     expect(Message::first()->msgno)->toBe(1);
@@ -86,7 +83,7 @@ it('returns count of imported messages', function () {
     copyRealMsg($dir, 2);
     copyRealMsg($dir, 3);
 
-    $area = Area::factory()->create(['dataset_id' => Dataset::factory()->create()->id]);
+    $area = Area::factory()->create();
     $count = (new MsgImporter)->import($dir, $area);
 
     expect($count)->toBe(3);

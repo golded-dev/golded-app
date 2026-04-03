@@ -4,7 +4,6 @@ namespace App\Import;
 
 use App\Domain\CharsetDetector;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Carbon\Carbon;
 
@@ -76,10 +75,10 @@ class SquishImporter
 
     /**
      * Import all messages from a Squish base (path without extension).
-     * e.g. import('/path/to/NETMAIL', $dataset)
+     * e.g. import('/path/to/NETMAIL')
      * Returns count of messages imported.
      */
-    public function import(string $basePath, Dataset $dataset): int
+    public function import(string $basePath): int
     {
         $sqdPath = $this->findFile($basePath, 'sqd');
         $sqiPath = $this->findFile($basePath, 'sqi');
@@ -90,7 +89,7 @@ class SquishImporter
 
         $areaName = strtoupper(basename($basePath));
         $area = Area::firstOrCreate(
-            ['dataset_id' => $dataset->id, 'code' => $areaName],
+            ['code' => $areaName, 'source_type' => 'squish'],
             ['name' => $areaName, 'sort_order' => 0],
         );
 
@@ -98,7 +97,7 @@ class SquishImporter
         $fsqi = fopen($sqiPath, 'rb');
 
         try {
-            $count = $this->importMessages($fsqd, $fsqi, $area, $dataset);
+            $count = $this->importMessages($fsqd, $fsqi, $area);
         } finally {
             fclose($fsqd);
             fclose($fsqi);
@@ -109,7 +108,7 @@ class SquishImporter
         return $count;
     }
 
-    private function importMessages($fsqd, $fsqi, Area $area, Dataset $dataset): int
+    private function importMessages($fsqd, $fsqi, Area $area): int
     {
         // Validate SQD base header
         $baseRaw = fread($fsqd, self::BASE_SIZE);
@@ -178,7 +177,6 @@ class SquishImporter
             $replies = array_values(unpack('V9', $hdr['replies']));
 
             $records[] = [
-                'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $idx['msgno'],
                 'from_name' => $this->toUtf8($hdr['from'], $charset),

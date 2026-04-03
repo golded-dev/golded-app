@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,7 +14,6 @@ class MessageFactory extends Factory
     public function definition(): array
     {
         return [
-            'dataset_id' => Dataset::factory(),
             'area_id' => Area::factory(),
             'msgno' => fake()->unique()->numberBetween(1, 9999),
             'subject' => fake()->sentence(6),

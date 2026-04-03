@@ -4,7 +4,6 @@ namespace App\Import;
 
 use App\Domain\CharsetDetector;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Carbon\Carbon;
 
@@ -56,7 +55,7 @@ class HudsonImporter
      * Import all messages from a Hudson message base directory.
      * Returns count of messages imported.
      */
-    public function import(string $basePath, Dataset $dataset): int
+    public function import(string $basePath): int
     {
         $idxPath = $this->findFile($basePath, 'MSGIDX.BBS');
         $hdrPath = $this->findFile($basePath, 'MSGHDR.BBS');
@@ -71,7 +70,7 @@ class HudsonImporter
         $ftxt = fopen($txtPath, 'rb');
 
         try {
-            $count = $this->importMessages($fidx, $fhdr, $ftxt, $dataset);
+            $count = $this->importMessages($fidx, $fhdr, $ftxt);
         } finally {
             fclose($fidx);
             fclose($fhdr);
@@ -81,7 +80,7 @@ class HudsonImporter
         return $count;
     }
 
-    private function importMessages($fidx, $fhdr, $ftxt, Dataset $dataset): int
+    private function importMessages($fidx, $fhdr, $ftxt): int
     {
         $areas = [];
         $records = [];
@@ -122,7 +121,7 @@ class HudsonImporter
             if (! isset($areas[$board])) {
                 $areaCode = 'BOARD'.$board;
                 $areas[$board] = Area::firstOrCreate(
-                    ['dataset_id' => $dataset->id, 'code' => $areaCode],
+                    ['code' => $areaCode, 'source_type' => 'hudson'],
                     ['name' => $areaCode, 'sort_order' => $board],
                 );
             }
@@ -135,7 +134,6 @@ class HudsonImporter
             $body = $this->parseBody($txtRaw);
 
             $records[] = [
-                'dataset_id' => $dataset->id,
                 'area_id' => $area->id,
                 'msgno' => $hdr['msgno'],
                 'from_name' => $this->toUtf8(substr($hdr['by'], 1), $charset),

@@ -1,7 +1,6 @@
 <?php
 
 use App\Import\JamImporter;
-use App\Models\Dataset;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -15,9 +14,8 @@ function jamTestBase(): string
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
 it('imports from_name from a real JAM message', function () {
-    $dataset = Dataset::factory()->create();
 
-    (new JamImporter)->import(jamTestBase(), $dataset);
+    (new JamImporter)->import(jamTestBase());
 
     expect(Message::first()->from_name)->toBe('Odinn Sorensen');
 });
@@ -25,8 +23,7 @@ it('imports from_name from a real JAM message', function () {
 // ── Header fields ─────────────────────────────────────────────────────────────
 
 it('imports to_name and subject when present', function () {
-    $dataset = Dataset::factory()->create();
-    (new JamImporter)->import(jamTestBase(), $dataset);
+    (new JamImporter)->import(jamTestBase());
 
     // First message has to_name but no subject (valid for this area)
     expect(Message::first()->to_name)->not->toBeEmpty();
@@ -35,24 +32,21 @@ it('imports to_name and subject when present', function () {
 });
 
 it('imports body text including kludge lines', function () {
-    $dataset = Dataset::factory()->create();
     // COLANNOU has messages with MSGID kludges; JTEST1 doesn't
-    (new JamImporter)->import(base_path('../archive/messages/JAM/I/COLANNOU'), $dataset);
+    (new JamImporter)->import(base_path('../archive/messages/JAM/I/COLANNOU'));
 
     $hasKludge = Message::all()->contains(fn ($m) => str_contains($m->body_text, "\x01"));
     expect($hasKludge)->toBeTrue();
 });
 
 it('imports posted_at as a valid date', function () {
-    $dataset = Dataset::factory()->create();
-    (new JamImporter)->import(jamTestBase(), $dataset);
+    (new JamImporter)->import(jamTestBase());
 
     expect(Message::first()->posted_at)->not->toBeNull();
 });
 
 it('stores reply links', function () {
-    $dataset = Dataset::factory()->create();
-    (new JamImporter)->import(jamTestBase(), $dataset);
+    (new JamImporter)->import(jamTestBase());
 
     // jtest1 area has messages; at least one should have a reply chain link
     $withReply = Message::whereNotNull('reply1st_msgno')
@@ -65,8 +59,7 @@ it('stores reply links', function () {
 });
 
 it('returns count of imported messages', function () {
-    $dataset = Dataset::factory()->create();
-    $count = (new JamImporter)->import(jamTestBase(), $dataset);
+    $count = (new JamImporter)->import(jamTestBase());
 
     expect($count)->toBeGreaterThan(0)
         ->and($count)->toBe(Message::count());

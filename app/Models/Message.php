@@ -13,7 +13,7 @@ class Message extends Model
     use HasFactory;
 
     protected $fillable = [
-        'dataset_id', 'area_id', 'msgno', 'external_id',
+        'area_id', 'msgno', 'external_id',
         'subject', 'from_name', 'from_address', 'to_name', 'to_address',
         'body_text', 'reply_to_msgno', 'reply_to_external_id',
         'reply1st_msgno', 'replynext_msgno', 'thread_key',
@@ -29,11 +29,6 @@ class Message extends Model
         'is_bookmarked' => 'boolean',
         'raw_metadata_json' => 'array',
     ];
-
-    public function dataset(): BelongsTo
-    {
-        return $this->belongsTo(Dataset::class);
-    }
 
     public function area(): BelongsTo
     {

@@ -7,12 +7,11 @@ use App\Import\JamImporter;
 use App\Import\MsgImporter;
 use App\Import\SquishImporter;
 use App\Models\Area;
-use App\Models\Dataset;
 use Illuminate\Console\Command;
 
 class ImportMessages extends Command
 {
-    protected $signature = 'golded:import {format : Message base format (msg, jam, squish, hudson)} {path : Path to message base root} {--fresh : Delete existing dataset before importing}';
+    protected $signature = 'golded:import {format : Message base format (msg, jam, squish, hudson)} {path : Path to message base root} {--fresh : Delete existing areas for this source_type before importing}';
 
     protected $description = 'Import messages from a FidoNet message base';
 
@@ -27,6 +26,12 @@ class ImportMessages extends Command
             return self::FAILURE;
         }
 
+        if ($this->option('fresh')) {
+            $deleted = Area::where('source_type', $format)->count();
+            Area::where('source_type', $format)->delete();
+            $this->line("  Dropped {$deleted} existing {$format} areas (cascades messages).");
+        }
+
         return match ($format) {
             'msg' => $this->importMsg($path),
             'jam' => $this->importJam($path),
@@ -36,23 +41,8 @@ class ImportMessages extends Command
         };
     }
 
-    /**
-     * If --fresh, delete the existing dataset (cascades to areas + messages)
-     * then return a fresh one. Otherwise firstOrCreate as usual.
-     */
-    private function resolveDataset(string $name, string $sourceType): Dataset
-    {
-        if ($this->option('fresh')) {
-            Dataset::where('name', $name)->delete();
-            $this->line("  Dropped existing dataset '{$name}'.");
-        }
-
-        return Dataset::firstOrCreate(['name' => $name], ['source_type' => $sourceType]);
-    }
-
     private function importMsg(string $basePath): int
     {
-        $dataset = $this->resolveDataset(basename($basePath), 'msg');
         $importer = new MsgImporter;
         $total = 0;
         $areaDirs = glob("{$basePath}/*", GLOB_ONLYDIR) ?: [];
@@ -60,7 +50,7 @@ class ImportMessages extends Command
         foreach ($areaDirs as $areaPath) {
             $areaName = strtoupper(basename($areaPath));
             $area = Area::firstOrCreate(
-                ['dataset_id' => $dataset->id, 'code' => $areaName],
+                ['code' => $areaName, 'source_type' => 'msg'],
                 ['name' => $areaName, 'sort_order' => 0],
             );
 
@@ -76,18 +66,12 @@ class ImportMessages extends Command
 
     private function importJam(string $basePath): int
     {
-        $dataset = $this->resolveDataset(basename($basePath), 'jam');
         $importer = new JamImporter;
         $total = 0;
-        $count = 0;
 
-        // Each .JHR file is one area. Scan both $basePath directly and one level of subdirs
-        // (supports both `golded:import jam JAM/` and `golded:import jam JAM/TEST/`)
-        $jhrFiles = $this->findJhrFiles($basePath);
-
-        foreach ($jhrFiles as $jhrFile) {
+        foreach ($this->findJhrFiles($basePath) as $jhrFile) {
             $base = preg_replace('/\.(JHR|jhr)$/', '', $jhrFile);
-            $count = $importer->import($base, $dataset);
+            $count = $importer->import($base);
             $areaName = strtoupper(basename($base));
             $this->line("  {$areaName}: {$count} messages");
             $total += $count;
@@ -100,16 +84,12 @@ class ImportMessages extends Command
 
     private function importSquish(string $basePath): int
     {
-        $dataset = $this->resolveDataset(basename($basePath), 'squish');
         $importer = new SquishImporter;
         $total = 0;
 
-        // Find all .SQD/.sqd files in $basePath and one level of subdirs
-        $sqdFiles = $this->findSqdFiles($basePath);
-
-        foreach ($sqdFiles as $sqdFile) {
+        foreach ($this->findSqdFiles($basePath) as $sqdFile) {
             $base = preg_replace('/\.(SQD|sqd)$/', '', $sqdFile);
-            $count = $importer->import($base, $dataset);
+            $count = $importer->import($base);
             $areaName = strtoupper(basename($base));
             $this->line("  {$areaName}: {$count} messages");
             $total += $count;
@@ -122,15 +102,13 @@ class ImportMessages extends Command
 
     private function importHudson(string $basePath): int
     {
-        $dataset = $this->resolveDataset(basename($basePath), 'hudson');
         $importer = new HudsonImporter;
-        $count = $importer->import($basePath, $dataset);
+        $count = $importer->import($basePath);
         $this->info("Imported {$count} messages.");
 
         return self::SUCCESS;
     }
 
-    /** Find all .SQD files in $dir and one level of subdirectories. */
     private function findSqdFiles(string $dir): array
     {
         $files = array_merge(
@@ -139,17 +117,12 @@ class ImportMessages extends Command
         );
 
         foreach (glob("{$dir}/*", GLOB_ONLYDIR) ?: [] as $sub) {
-            $files = array_merge(
-                $files,
-                glob("{$sub}/*.SQD") ?: [],
-                glob("{$sub}/*.sqd") ?: [],
-            );
+            $files = array_merge($files, glob("{$sub}/*.SQD") ?: [], glob("{$sub}/*.sqd") ?: []);
         }
 
         return array_unique($files);
     }
 
-    /** Find all .JHR files in $dir and one level of subdirectories. */
     private function findJhrFiles(string $dir): array
     {
         $files = array_merge(
@@ -158,11 +131,7 @@ class ImportMessages extends Command
         );
 
         foreach (glob("{$dir}/*", GLOB_ONLYDIR) ?: [] as $sub) {
-            $files = array_merge(
-                $files,
-                glob("{$sub}/*.JHR") ?: [],
-                glob("{$sub}/*.jhr") ?: [],
-            );
+            $files = array_merge($files, glob("{$sub}/*.JHR") ?: [], glob("{$sub}/*.jhr") ?: []);
         }
 
         return array_unique($files);

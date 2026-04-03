@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Area;
-use App\Models\Dataset;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,10 +13,10 @@ class AreaFactory extends Factory
     public function definition(): array
     {
         return [
-            'dataset_id' => Dataset::factory(),
             'code' => strtoupper(fake()->lexify('??????')),
             'name' => fake()->words(3, true),
             'echoid' => strtoupper(fake()->lexify('??????')),
+            'source_type' => fake()->randomElement(['msg', 'jam', 'squish', 'hudson']),
             'group_id' => null,
             'sort_order' => fake()->numberBetween(0, 1000),
             'message_count' => fake()->numberBetween(1, 500),

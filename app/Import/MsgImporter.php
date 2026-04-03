@@ -68,7 +68,6 @@ class MsgImporter
         $body = $this->parseBody($bodyRaw);
 
         Message::create([
-            'dataset_id' => $area->dataset_id,
             'area_id' => $area->id,
             'msgno' => $msgno,
             'subject' => $this->toUtf8($subject, $charset),

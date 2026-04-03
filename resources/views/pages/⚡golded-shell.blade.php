@@ -4,7 +4,6 @@ use App\Domain\LineClassifier;
 use App\Domain\LineType;
 use App\Domain\ThreadTree;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -14,7 +13,6 @@ use Livewire\Component;
 new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
 {
     public string $screen = 'areas';
-    public ?int $datasetId = null;
     public ?int $areaId = null;
     public ?int $messageId = null;
     public int $selectionIndex = 0;
@@ -22,21 +20,12 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     public int $topOffset = 0;
     public bool $showKludges = false;
 
-    public function mount(): void
-    {
-        $dataset = Dataset::withCount('messages')->orderByDesc('messages_count')->first();
-        if ($dataset) {
-            $this->datasetId = $dataset->id;
-        }
-    }
-
     #[Computed]
     public function areas(): \Illuminate\Database\Eloquent\Collection
     {
-        return Area::where('dataset_id', $this->datasetId ?? 0)
-            ->orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END') // Y: unread first
-            ->orderByDesc('unread_count')                                  // U: most unread first
-            ->orderBy('echoid')                                             // E: echoid alphabetical
+        return Area::orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END') // Y: unread first
+            ->orderByDesc('unread_count')                                         // U: most unread first
+            ->orderBy('code')                                                     // alphabetical
             ->get();
     }
 

@@ -2,7 +2,6 @@
 
 use App\Import\HudsonImporter;
 use App\Models\Area;
-use App\Models\Dataset;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -16,9 +15,8 @@ function hudsonTestBase(): string
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
 it('imports from_name from a real Hudson message', function () {
-    $dataset = Dataset::factory()->create();
 
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::first()->from_name)->toBe('Dirk A. Mueller');
 });
@@ -26,50 +24,44 @@ it('imports from_name from a real Hudson message', function () {
 // ── Header fields ─────────────────────────────────────────────────────────────
 
 it('imports to_name and subject', function () {
-    $dataset = Dataset::factory()->create();
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::first()->to_name)->not->toBeEmpty();
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
 it('imports body text including kludge lines', function () {
-    $dataset = Dataset::factory()->create();
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     $body = Message::first()->body_text;
     expect($body)->toContain("\x01");
 });
 
 it('imports posted_at as a valid date', function () {
-    $dataset = Dataset::factory()->create();
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::first()->posted_at)->not->toBeNull();
 });
 
 it('stores reply links', function () {
-    $dataset = Dataset::factory()->create();
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::count())->toBeGreaterThan(0);
     expect(Message::whereNotNull('reply_to_msgno')->count())->toBeGreaterThanOrEqual(0);
 });
 
 it('returns count of imported messages', function () {
-    $dataset = Dataset::factory()->create();
-    $count = (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    $count = (new HudsonImporter)->import(hudsonTestBase());
 
     expect($count)->toBeGreaterThan(0)
         ->and($count)->toBe(Message::count());
 });
 
 it('creates separate areas for each board', function () {
-    $dataset = Dataset::factory()->create();
-    (new HudsonImporter)->import(hudsonTestBase(), $dataset);
+    (new HudsonImporter)->import(hudsonTestBase());
 
     // Hudson archive has 2 boards (150 and 151)
-    expect(Area::where('dataset_id', $dataset->id)->count())->toBe(2);
+    expect(Area::where('source_type', 'hudson')->count())->toBe(2);
 });
 
 // ── Artisan command ───────────────────────────────────────────────────────────
