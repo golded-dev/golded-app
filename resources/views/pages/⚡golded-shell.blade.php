@@ -596,7 +596,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         $areaMsgs   = $area?->message_count ?? 0;
         $areaUnread = $area?->unread_count ?? 0;
         $rows[]     = $this->status(
-            'GoldED/MAC 3.0.1-os1',
+            config('golded.version', 'GoldED'),
             "{$areaLabel}: {$areaMsgs} msgs, {$areaUnread} unread, 0 personal",
             date('H:i:s')
         );
@@ -676,7 +676,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', 'Msg ' . ($this->selectionIndex + 1) . " of {$total}", '13:45:22');
+        $rows[] = $this->status(config('golded.version', 'GoldED'), 'Msg ' . ($this->selectionIndex + 1) . " of {$total}", '13:45:22');
 
         return $rows;
     }
@@ -755,7 +755,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', "Msg {$msgno} of {$total}", '13:45:22');
+        $rows[] = $this->status(config('golded.version', 'GoldED'), "Msg {$msgno} of {$total}", '13:45:22');
 
         return $rows;
     }
@@ -811,7 +811,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
         }
 
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', '[INS] Line 7, Col 1  F2=Save  Esc=Abort', '13:45:22');
+        $rows[] = $this->status(config('golded.version', 'GoldED'), '[INS] Line 7, Col 1  F2=Save  Esc=Abort', '13:45:22');
 
         return $rows;
     }

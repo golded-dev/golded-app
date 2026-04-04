@@ -4,6 +4,7 @@
 // Re-run the command to refresh from GOLDED.CFG.
 
 return [
+    'version' => 'GoldED 7',
     'username' => 'Odinn Sorensen',
     'address' => '2:236/77',
     'charset_import' => 'CP850',
@@ -20,7 +21,7 @@ return [
         'Golden Wizard * GoldED Author * +45-45-821325 * HST/DS',
         'Busier than a one-legged man in an ass-kicking contest',
         '    ---> The Golden Wizard <---    ',
-        ' °±² The Golden Wizard BBS * +45-45-821325 ²±° ',
+        ' ï¿½ï¿½ï¿½ The Golden Wizard BBS * +45-45-821325 ï¿½ï¿½ï¿½ ',
         'Jeg vil godt have et semikolon her -> ;',
         '12345678901234567890123456789012345678901234567890123456789012345678901234567890',
         'dfname = @dfname, tfname = @tfname',

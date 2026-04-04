@@ -51,6 +51,7 @@ class ImportGoldedConfig extends Command
         // Re-run the command to refresh from GOLDED.CFG.
 
         return [
+            'version'        => 'GoldED 7',
             'username'       => {$username},
             'address'        => {$address},
             'charset_import' => {$charsetImport},
