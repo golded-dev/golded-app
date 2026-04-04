@@ -87,7 +87,7 @@ it('renders multiple segments in sequence', function () {
         ->toContain("\033[30;47mtext\033[0m");
 });
 
-it('renders multiple rows separated by newlines', function () {
+it('positions each row with absolute cursor escape', function () {
     $renderer = new AnsiRenderer;
     $screen = [
         [['row one', 'cga-black-lgrey']],
@@ -98,7 +98,8 @@ it('renders multiple rows separated by newlines', function () {
     expect($output)
         ->toContain('row one')
         ->toContain('row two')
-        ->toContain("\n");
+        ->toContain("\033[1;1H")
+        ->toContain("\033[2;1H");
 });
 
 it('falls back to default reset for unknown CGA class', function () {

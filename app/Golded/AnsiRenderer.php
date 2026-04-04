@@ -51,27 +51,17 @@ class AnsiRenderer
     {
         $output = "\033[H"; // cursor home
 
-        $lines = [];
-        foreach ($screen as $row) {
-            $line = '';
-            $visible = 0;
+        foreach ($screen as $i => $row) {
+            // Absolute row positioning avoids wrap + \n = blank line in raw mode.
+            $output .= sprintf("\033[%d;1H", $i + 1);
 
             foreach ($row as [$text, $class]) {
                 $ansi = self::CGA_MAP[$class] ?? null;
-                $line .= $ansi !== null
+                $output .= $ansi !== null
                     ? "\033[{$ansi}m{$text}\033[0m"
                     : "{$text}\033[0m";
-                $visible += mb_strlen($text);
             }
-
-            if ($visible < $cols) {
-                $line .= str_repeat(' ', $cols - $visible);
-            }
-
-            $lines[] = $line;
         }
-
-        $output .= implode("\n", $lines);
 
         return $output;
     }
