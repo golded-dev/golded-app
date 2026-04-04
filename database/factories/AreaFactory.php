@@ -17,6 +17,7 @@ class AreaFactory extends Factory
             'name' => fake()->words(3, true),
             'echoid' => strtoupper(fake()->lexify('??????')),
             'source_type' => fake()->randomElement(['msg', 'jam', 'squish', 'hudson']),
+            'area_type' => fake()->randomElement(['Net', 'EMail', 'Echo', 'News', 'Local']),
             'group_id' => null,
             'sort_order' => fake()->numberBetween(0, 1000),
             'message_count' => fake()->numberBetween(1, 500),

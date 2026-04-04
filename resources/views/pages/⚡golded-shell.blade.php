@@ -23,10 +23,33 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     #[Computed]
     public function areas(): \Illuminate\Database\Eloquent\Collection
     {
-        return Area::orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END') // Y: unread first
-            ->orderByDesc('unread_count')                                         // U: most unread first
-            ->orderBy('code')                                                     // alphabetical
-            ->get();
+        $sort  = strtoupper(config('golded.arealistsort', 'YUE'));
+        $query = Area::query();
+
+        // Type order: Net → EMail → Echo → News → Local → (null/other)
+        $typeOrder = collect(config('golded.areasep', []))->pluck('area_type')->values();
+
+        foreach (str_split($sort) as $token) {
+            match ($token) {
+                'T' => $typeOrder->isNotEmpty()
+                    ? $query->orderByRaw(
+                        'CASE area_type '
+                        . $typeOrder->map(fn ($t, $i) => "WHEN '{$t}' THEN {$i}")->implode(' ')
+                        . ' ELSE '.$typeOrder->count().' END'
+                    )
+                    : null,
+                'G' => $query->orderBy('group_id'),
+                'Y' => $query->orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END'),
+                'U' => $query->orderByDesc('unread_count'),
+                'E' => $query->orderBy('echoid'),
+                'O' => $query->orderBy('sort_order'),
+                'N' => $query->orderBy('name'),
+                // F = favourite (not yet implemented), S = last-seen — both no-ops
+                default => null,
+            };
+        }
+
+        return $query->get();
     }
 
     #[Computed]
@@ -66,7 +89,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             'ArrowRight', 'Enter' => $this->openArea(),
             default => null,
         };
-        $this->clampTopOffset($count);
+        $this->clampTopOffsetAreas($count);
     }
 
     private function handleMessagesKey(string $key): void
@@ -94,6 +117,68 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             $this->topOffset = $this->selectionIndex - $window + 1;
         }
         $this->topOffset = max(0, min($this->topOffset, max(0, $count - $window)));
+    }
+
+    /**
+     * Separator-aware topOffset clamp for the area list.
+     *
+     * topOffset is stored as a DISPLAY-LIST POSITION (not an area index), so
+     * separators and areas are treated as equal-height rows.  This eliminates
+     * the 2-row visual jump that occurred when a separator sat at the boundary
+     * between one topOffset value and the next.
+     */
+    private function clampTopOffsetAreas(int $count): void
+    {
+        $this->selectionIndex = max(0, min($this->selectionIndex, max(0, $count - 1)));
+
+        $displayList = $this->buildDisplayList();
+        $total       = count($displayList);
+        $contentRows = 21;
+
+        // Find the display-list position of the selected area
+        $selDisplayPos = 0;
+        foreach ($displayList as $pos => $item) {
+            if ($item['type'] === 'area' && $item['index'] === $this->selectionIndex) {
+                $selDisplayPos = $pos;
+                break;
+            }
+        }
+
+        // Scroll up
+        if ($selDisplayPos < $this->topOffset) {
+            $this->topOffset = $selDisplayPos;
+        }
+        // Scroll down
+        elseif ($selDisplayPos >= $this->topOffset + $contentRows) {
+            $this->topOffset = $selDisplayPos - $contentRows + 1;
+        }
+
+        // Hard-clamp: never scroll past the end of the list
+        $this->topOffset = max(0, min($this->topOffset, max(0, $total - $contentRows)));
+    }
+
+    /** @return array<int, array{type: string, ...}> */
+    private function buildDisplayList(): array
+    {
+        $areasep  = collect(config('golded.areasep', []));
+        $lastType = null;
+        $list     = [];
+
+        foreach ($this->areas as $areaIndex => $area) {
+            $areaType = $area->area_type ?? '';
+
+            if ($areaType !== $lastType && $areaType !== '' && $areasep->isNotEmpty()) {
+                $sepEntry = $areasep->firstWhere('area_type', $areaType);
+                if ($sepEntry) {
+                    $list[] = ['type' => 'sep', 'label' => $sepEntry['label']];
+                }
+                $lastType = $areaType;
+            }
+
+            $list[] = ['type' => 'area', 'index' => $areaIndex, 'area' => $area];
+        }
+
+        return $list;
     }
 
     private function handleReaderKey(string $key): void
@@ -379,6 +464,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
             - mb_strlen($mid)
             - mb_strlen($right);
 
+        $dashSpace   = max(0, $dashSpace);
         $leftDashes  = intdiv($dashSpace, 2);
         $rightDashes = $dashSpace - $leftDashes;
 
@@ -401,7 +487,7 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     {
         $l = ' ' . $left;
         $r = $right . ' ';
-        $gap     = 80 - mb_strlen($l) - mb_strlen($center) - mb_strlen($r);
+        $gap     = max(0, 80 - mb_strlen($l) - mb_strlen($center) - mb_strlen($r));
         $padLeft = intdiv($gap, 2);
 
         return $l
@@ -416,55 +502,104 @@ new #[Layout('layouts::terminal')] #[Title('GoldED 7')] class extends Component
     /** @return array<int, string> */
     private function areasScreen(): array
     {
-        $y = 'cga-yellow-lgrey';
-        $b = 'cga-blue-lgrey';
-        $n = 'cga-black-lgrey';
-        $s = 'cga-white-blue';
+        // Bordered column layout (78 content chars between │ borders):
+        // num(3) ind(1) sp(1) desc(42) msgs(6) sp(1) new(5) sp(1) echoid(16) sp(1) grp(1) = 78
+        $y   = 'cga-yellow-lgrey';
+        $b   = 'cga-blue-lgrey';
+        $n   = 'cga-black-lgrey';
+        $s   = 'cga-white-blue';
+        $sep = 'cga-blue-lgrey';
+        $hdr = 'cga-yellow-blue';
 
         $rows = [];
 
-        $total   = $this->areas->count();
-        $unread  = $this->areas->sum('unread_count');
-        $rows[]  = $this->top('GoldED 3.0.1', 'Area List', "{$total} areas, {$unread} new");
+        // Row 0: header bar (yellow on blue, no border)
+        $rows[] = $this->ln([['>>Pick New Area:', $hdr]]);
 
-        // Column header — columns must match data: num(4) desc(30) msgs(6) chg(1) new(6) sp(1) echo(16)
-        $rows[] = $this->row([
-            ['  # ', $b],                           // 4
-            ['Description                   ', $b], // 30
-            ['  Msgs', $b],                         // 6
-            [' ', $b],                              // 1 (chg col)
-            ['   New', $b],                         // 6
-            [' ', $b],                              // 1 (sp col)
-            ['EchoID          ', $b],               // 16
-        ]);
+        // Row 1: top border with embedded column labels
+        // 78 content chars: ─Area─Description─(29 dashes)Msgs──(─)New──(─)EchoID─────────Grp─
+        // Positions: 0-46=47, 47-52=6, 53=1, 54-58=5, 59=1, 60-77=18
+        $topContent = '─Area─Description─'            // 18 chars, pos 0–17
+            . str_repeat('─', 29)                     // 29 dashes, pos 18–46
+            . 'Msgs──'                                 // 6 chars,  pos 47–52
+            . '─'                                     // 1 char,   pos 53
+            . 'New──'                                  // 5 chars,  pos 54–58
+            . '─'                                     // 1 char,   pos 59
+            . 'EchoID─────────Grp';                   // 18 chars, pos 60–77
+        $rows[] = $this->ln([['┌'.$topContent.'┐', $y]]);
 
-        $rows[] = $this->sep();
+        // Rows 2–22: content area (21 rows max, then bottom border on row 23)
+        $displayList = $this->buildDisplayList();
 
-        $visible = $this->areas->slice($this->topOffset, 20);
+        // topOffset is a display-list position — start rendering directly from it.
+        $contentRows = 21;
+        $emitted     = 0;
 
-        foreach ($visible->values() as $i => $area) {
-            $absIndex = $this->topOffset + $i;
-            $selected = $absIndex === $this->selectionIndex;
-            $hasUnread = ($area->unread_count ?? 0) > 0;
-            $c        = $selected ? $s : ($hasUnread ? $b : $n);
-            $num      = ($selected ? '► ' : '  ') . ($absIndex + 1) . ' ';
-            $desc     = str_pad(mb_substr($area->name, 0, 28), 30);
-            $msgs     = str_pad((string) ($area->message_count ?? '-'), 6, ' ', STR_PAD_LEFT);
-            $new      = str_pad((string) ($area->unread_count ?? '-'), 6, ' ', STR_PAD_LEFT);
-            $echo     = str_pad(mb_substr((string) ($area->echoid ?? ''), 0, 16), 16);
-            $rows[]   = $this->row([
-                [$num, $c], [$desc, $c], [$msgs, $c], [' ', $c],
-                [$new, $c], [' ', $c], [$echo, $c], ['   ', $c],
-            ], $c);
+        for ($pos = $this->topOffset; $pos < count($displayList) && $emitted < $contentRows; $pos++) {
+            $item = $displayList[$pos];
+
+            if ($item['type'] === 'sep') {
+                $label   = $item['label'];
+                $dashes  = max(0, 78 - 2 - mb_strlen($label));
+                $left    = intdiv($dashes, 2);
+                $right   = $dashes - $left;
+                $content = str_repeat('─', $left).' '.$label.' '.str_repeat('─', max(0, $right - 2));
+                $rows[]  = $this->row([[mb_str_pad($content, 78), $sep]]);
+            } else {
+                $area      = $item['area'];
+                $absIndex  = $item['index'];
+                $selected  = $absIndex === $this->selectionIndex;
+                $hasUnread = ($area->unread_count ?? 0) > 0;
+                $c         = $selected ? $s : ($hasUnread ? $b : $n);
+
+                $num  = str_pad((string) ($absIndex + 1), 3, ' ', STR_PAD_LEFT);
+                $ind  = $hasUnread ? '>' : ' ';
+                $desc = mb_str_pad(mb_substr($area->name, 0, 42), 42);
+                $msgs = $area->message_count !== null
+                    ? str_pad((string) $area->message_count, 6, ' ', STR_PAD_LEFT)
+                    : '     -';
+                $new  = $area->message_count !== null
+                    ? str_pad((string) ($area->unread_count ?? 0), 5, ' ', STR_PAD_LEFT)
+                    : '    -';
+                $echo = mb_str_pad(mb_substr((string) ($area->echoid ?? ''), 0, 16), 16);
+                $grp  = mb_substr((string) ($area->group_id ?? ' '), 0, 1);
+
+                $rows[] = $this->row([
+                    [$num,  $c],
+                    [$ind,  $c],
+                    [' ',   $c],
+                    [$desc, $c],
+                    [$msgs, $c],
+                    [' ',   $c],
+                    [$new,  $c],
+                    [' ',   $c],
+                    [$echo, $c],
+                    [' ',   $c],
+                    [$grp,  $c],
+                ], $c);
+            }
+
+            $emitted++;
         }
 
-        $dataRows = max(0, 20 - $visible->count());
-        for ($i = 0; $i < $dataRows; $i++) {
+        // Pad remaining rows up to $contentRows
+        for ($i = $emitted; $i < $contentRows; $i++) {
             $rows[] = $this->row([], $n);
         }
 
+        // Row 23: bottom border
         $rows[] = $this->bottom();
-        $rows[] = $this->status('GoldED 3.0.1', 'Area ' . ($this->selectionIndex + 1) . " of {$total}", '13:45:22');
+
+        // Row 24: status bar
+        $area       = $this->areas->get($this->selectionIndex);
+        $areaLabel  = $area?->echoid ?? ($area?->name ?? '');
+        $areaMsgs   = $area?->message_count ?? 0;
+        $areaUnread = $area?->unread_count ?? 0;
+        $rows[]     = $this->status(
+            'GoldED/MAC 3.0.1-os1',
+            "{$areaLabel}: {$areaMsgs} msgs, {$areaUnread} unread, 0 personal",
+            date('H:i:s')
+        );
 
         return $rows;
     }

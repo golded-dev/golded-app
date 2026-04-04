@@ -13,7 +13,7 @@ class Area extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'name', 'echoid', 'group_id', 'source_type',
+        'code', 'name', 'echoid', 'group_id', 'source_type', 'area_type',
         'sort_order', 'message_count', 'unread_count', 'last_read_msgno',
     ];
 

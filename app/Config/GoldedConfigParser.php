@@ -19,6 +19,9 @@ class GoldedConfigParser
      *     origins: string[],
      *     tearline: string|null,
      *     taglines: string[],
+     *     areasep: array<int, array{label: string, area_type: string}>,
+     *     arealistsort: string,
+     *     areas: array<string, array{echoid: string, description: string, group_id: string, area_type: string, format: string, path: string}>,
      * }
      */
     public function parse(string $cfgPath): array
@@ -30,6 +33,9 @@ class GoldedConfigParser
             'origins' => [],
             'tearline' => null,
             'taglines' => [],
+            'areasep' => [],
+            'arealistsort' => 'TGYUE',
+            'areas' => [],
         ];
 
         $this->parseFile($cfgPath, $result);
@@ -99,7 +105,10 @@ class GoldedConfigParser
 
             // INCLUDE <filename>
             if (preg_match('/^INCLUDE\s+(.+)$/i', $line, $m)) {
-                $included = $baseDir.DIRECTORY_SEPARATOR.trim($m[1]);
+                $target = trim($m[1]);
+                $included = str_starts_with($target, DIRECTORY_SEPARATOR) || (strlen($target) > 1 && $target[1] === ':')
+                    ? $target
+                    : $baseDir.DIRECTORY_SEPARATOR.$target;
                 $this->parseFile($included, $result);
 
                 continue;
@@ -145,6 +154,13 @@ class GoldedConfigParser
 
     private function extractKeyword(string $line, array &$result): void
     {
+        // AREADEF has a different structure — handle it separately
+        if (preg_match('/^AREADEF\s+/i', $line)) {
+            $this->extractAreaDef($line, $result);
+
+            return;
+        }
+
         if (! preg_match('/^(\w+)\s*(.*?)$/i', $line, $m)) {
             return;
         }
@@ -195,7 +211,59 @@ class GoldedConfigParser
                     $result['taglines'][] = $value;
                 }
                 break;
+
+            case 'AREALISTSORT':
+                if ($value !== '') {
+                    $result['arealistsort'] = strtoupper($value);
+                }
+                break;
+
+            case 'AREASEP':
+                // AREASEP <pattern> "<label>" <sort_order> <area_type>
+                // e.g.  AREASEP !NET "Netmail areas" 0 Net
+                if (preg_match('/^(\S+)\s+"([^"]+)"\s+\d+\s+(\S+)/', $value, $am)) {
+                    $result['areasep'][] = [
+                        'label' => $am[2],
+                        'area_type' => $am[3],
+                    ];
+                }
+                break;
         }
+    }
+
+    /**
+     * Parse an AREADEF line and store in $result['areas'].
+     *
+     * Format: AREADEF <echoid> "<description>" <group_id> <area_type> <format> <path|board_num> [extra...]
+     *
+     * Key is:
+     *   - normalised file path for JAM/Squish/MSG formats
+     *   - "hudson:<board_num>" for Hudson format
+     */
+    private function extractAreaDef(string $line, array &$result): void
+    {
+        if (! preg_match(
+            '/^AREADEF\s+(\S+)\s+"([^"]*)"\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/i',
+            $line, $m
+        )) {
+            return;
+        }
+
+        [, $echoid, $description, $group_id, $area_type, $format, $pathOrBoard] = $m;
+
+        $formatLower = strtolower($format);
+        $key = $formatLower === 'hudson'
+            ? 'hudson:'.$pathOrBoard
+            : rtrim($pathOrBoard, '/\\');
+
+        $result['areas'][$key] = [
+            'echoid' => $echoid,
+            'description' => $description,
+            'group_id' => strtoupper($group_id),
+            'area_type' => $area_type,
+            'format' => $formatLower,
+            'path' => $key,
+        ];
     }
 
     private function mapCharset(string $name): string

@@ -40,6 +40,9 @@ class ImportGoldedConfig extends Command
         $tearline = var_export($config['tearline'], true);
         $origins = $this->renderArray($config['origins']);
         $taglines = $this->renderArray($config['taglines']);
+        $arealistsort = var_export($config['arealistsort'], true);
+        $areasep = $this->renderAreasep($config['areasep']);
+        $areas = $this->renderAreas($config['areas']);
 
         return <<<PHP
         <?php
@@ -54,6 +57,9 @@ class ImportGoldedConfig extends Command
             'tearline'       => {$tearline},
             'origins'        => {$origins},
             'taglines'       => {$taglines},
+            'arealistsort'   => {$arealistsort},
+            'areasep'        => {$areasep},
+            'areas'          => {$areas},
         ];
         PHP;
     }
@@ -65,6 +71,42 @@ class ImportGoldedConfig extends Command
         }
 
         $lines = array_map(fn ($v) => '        '.var_export($v, true).',', $items);
+
+        return "[\n".implode("\n", $lines)."\n    ]";
+    }
+
+    private function renderAreasep(array $items): string
+    {
+        if (empty($items)) {
+            return '[]';
+        }
+
+        $lines = array_map(function ($sep) {
+            $label = var_export($sep['label'], true);
+            $type = var_export($sep['area_type'], true);
+
+            return "        ['label' => {$label}, 'area_type' => {$type}],";
+        }, $items);
+
+        return "[\n".implode("\n", $lines)."\n    ]";
+    }
+
+    private function renderAreas(array $areas): string
+    {
+        if (empty($areas)) {
+            return '[]';
+        }
+
+        $lines = [];
+        foreach ($areas as $path => $def) {
+            $key = var_export($path, true);
+            $echoid = var_export($def['echoid'], true);
+            $description = var_export($def['description'], true);
+            $groupId = var_export($def['group_id'], true);
+            $areaType = var_export($def['area_type'], true);
+            $format = var_export($def['format'], true);
+            $lines[] = "        {$key} => ['echoid' => {$echoid}, 'description' => {$description}, 'group_id' => {$groupId}, 'area_type' => {$areaType}, 'format' => {$format}],";
+        }
 
         return "[\n".implode("\n", $lines)."\n    ]";
     }

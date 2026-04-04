@@ -57,8 +57,10 @@ it('opens area on ArrowRight', function () {
 });
 
 it('opens the area at the current selection index', function () {
-    Area::factory()->create(['echoid' => 'ALPHA', 'unread_count' => 0]);
-    $second = Area::factory()->create(['echoid' => 'BETA', 'unread_count' => 0]);
+    // echoid controls E-sort order (both areas same source_type/area_type/unread_count for determinism)
+    $shared = ['source_type' => 'jam', 'area_type' => 'Echo', 'unread_count' => 0];
+    Area::factory()->create(array_merge($shared, ['code' => 'FIRST', 'echoid' => 'ALPHA']));
+    $second = Area::factory()->create(array_merge($shared, ['code' => 'SECOND', 'echoid' => 'BETA']));
 
     Livewire::test('pages::golded-shell')
         ->call('handleKey', 'ArrowDown')
@@ -261,7 +263,10 @@ it('sorts areas with unread messages above areas without', function () {
 });
 
 it('renders area unread colour for areas with unread messages', function () {
-    Area::factory()->create(['name' => 'Busy Echo', 'unread_count' => 3]);
+    // Second area has higher unread count so it sorts first (selected), leaving Busy Echo
+    // at index 1 (not selected) — where the unread colour cga-blue-lgrey is applied.
+    Area::factory()->create(['name' => 'Busy Echo', 'unread_count' => 3, 'message_count' => 10]);
+    Area::factory()->create(['unread_count' => 10, 'message_count' => 50]);
 
     Livewire::test('pages::golded-shell')
         ->assertSee('Busy Echo')

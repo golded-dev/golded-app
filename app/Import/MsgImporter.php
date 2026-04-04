@@ -32,6 +32,7 @@ class MsgImporter
     /** Import all .msg files from $path into the given Area. Returns count imported. */
     public function import(string $path, Area $area): int
     {
+        $this->applyAreaDefMeta($area, $path);
         $files = glob("{$path}/*.msg") ?: glob("{$path}/*.MSG") ?: [];
         $count = 0;
 

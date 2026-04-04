@@ -80,6 +80,7 @@ class JamImporter
             ['code' => $areaName, 'source_type' => 'jam'],
             ['name' => $areaName, 'sort_order' => 0],
         );
+        $this->applyAreaDefMeta($area, $basePath);
 
         $fhr = fopen($jhrPath, 'rb');
         $fdt = fopen($jdtPath, 'rb');

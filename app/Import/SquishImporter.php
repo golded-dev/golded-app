@@ -92,6 +92,7 @@ class SquishImporter
             ['code' => $areaName, 'source_type' => 'squish'],
             ['name' => $areaName, 'sort_order' => 0],
         );
+        $this->applyAreaDefMeta($area, $basePath);
 
         $fsqd = fopen($sqdPath, 'rb');
         $fsqi = fopen($sqiPath, 'rb');

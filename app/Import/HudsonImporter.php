@@ -124,6 +124,7 @@ class HudsonImporter
                     ['code' => $areaCode, 'source_type' => 'hudson'],
                     ['name' => $areaCode, 'sort_order' => $board],
                 );
+                $this->applyAreaDefMeta($areas[$board], 'hudson:'.$board);
             }
             $area = $areas[$board];
 
