@@ -4,12 +4,12 @@
 // Re-run the command to refresh from GOLDED.CFG.
 
 return [
-    'version' => 'GoldED 7',
-    'username' => 'Odinn Sorensen',
-    'address' => '2:236/77',
+    'version'        => 'GoldED 7',
+    'username'       => 'Odinn Sorensen',
+    'address'        => '2:236/77',
     'charset_import' => 'CP850',
-    'tearline' => '@longpid @version',
-    'origins' => [
+    'tearline'       => '@longpid @version',
+    'origins'        => [
         'http://www.goldware.dk * e-mail: odinn@goldware.dk',
         'Living in interesting times',
         'The Golden Wizard is back',
@@ -21,21 +21,21 @@ return [
         'Golden Wizard * GoldED Author * +45-45-821325 * HST/DS',
         'Busier than a one-legged man in an ass-kicking contest',
         '    ---> The Golden Wizard <---    ',
-        ' ï¿½ï¿½ï¿½ The Golden Wizard BBS * +45-45-821325 ï¿½ï¿½ï¿½ ',
+        ' °±² The Golden Wizard BBS * +45-45-821325 ²±° ',
         'Jeg vil godt have et semikolon her -> ;',
         '12345678901234567890123456789012345678901234567890123456789012345678901234567890',
         'dfname = @dfname, tfname = @tfname',
     ],
-    'taglines' => [],
-    'arealistsort' => 'FYTUE',
-    'areasep' => [
+    'taglines'       => [],
+    'arealistsort'   => 'FYTUE',
+    'areasep'        => [
         ['label' => 'Netmail areas', 'area_type' => 'Net'],
         ['label' => 'E-mail areas', 'area_type' => 'EMail'],
         ['label' => 'Echomail areas', 'area_type' => 'Echo'],
         ['label' => 'Newsgroup areas', 'area_type' => 'News'],
         ['label' => 'Local areas', 'area_type' => 'Local'],
     ],
-    'areas' => [
+    'areas'          => [
         'M:\\SQUISH\\NET\\ALL' => ['echoid' => 'NETMAIL', 'description' => 'Netmail general', 'group_id' => 'A', 'area_type' => 'Net', 'format' => 'squish'],
         'M:\\MSG\\NETMAIL' => ['echoid' => 'NETMAIL.ALL', 'description' => 'Netmail mailer', 'group_id' => 'A', 'area_type' => 'Net', 'format' => 'opus'],
         'M:\\SQUISH\\NET\\HUB' => ['echoid' => 'NETMAIL.HUB', 'description' => 'Netmail hub', 'group_id' => 'A', 'area_type' => 'Net', 'format' => 'squish'],
