@@ -1,6 +1,7 @@
 <?php
 
 use App\Import\SquishImporter;
+use App\Models\Area;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -57,6 +58,47 @@ it('returns count of imported messages', function () {
 
     expect($count)->toBeGreaterThan(0)
         ->and($count)->toBe(Message::count());
+});
+
+// ── MSGID deduplication ───────────────────────────────────────────────────────
+
+it('populates external_id for all imported Squish messages', function () {
+    (new SquishImporter)->import(squishTestBase());
+
+    expect(Message::whereNull('external_id')->count())->toBe(0);
+});
+
+it('uses the MSGID kludge from the control block as external_id for STEST1 messages', function () {
+    // STEST1 has MSGID kludges in the control block — none should be synthetic
+    (new SquishImporter)->import(squishTestBase());
+
+    expect(Message::where('external_id', 'like', 'hash:%')->count())->toBe(0);
+});
+
+it('uses the MSGID kludge as external_id when present in Squish message', function () {
+    (new SquishImporter)->import(base_path('../archive/messages/SQUISH/INT/GOLDED'));
+
+    expect(Message::where('external_id', 'not like', 'hash:%')->count())->toBeGreaterThan(0);
+});
+
+it('message_count reflects total messages in area after re-import', function () {
+    (new SquishImporter)->import(squishTestBase());
+    $area = Area::first();
+    $realCount = $area->message_count;
+
+    (new SquishImporter)->import(squishTestBase());
+    $area->refresh();
+
+    expect($area->message_count)->toBe($realCount);
+});
+
+it('re-importing the same Squish base is idempotent', function () {
+    (new SquishImporter)->import(squishTestBase());
+    $count = Message::count();
+
+    (new SquishImporter)->import(squishTestBase());
+
+    expect(Message::count())->toBe($count);
 });
 
 // ── Artisan command ───────────────────────────────────────────────────────────

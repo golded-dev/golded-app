@@ -66,7 +66,7 @@ class JamImporter
      * e.g. import('/path/to/NETMAIL')
      * Returns count of messages imported.
      */
-    public function import(string $basePath): int
+    public function import(string $basePath, ?Area $area = null): int
     {
         $jhrPath = $this->findFile($basePath, 'jhr');
         $jdtPath = $this->findFile($basePath, 'jdt');
@@ -75,12 +75,14 @@ class JamImporter
             return 0;
         }
 
-        $areaName = strtoupper(basename($basePath));
-        $area = Area::firstOrCreate(
-            ['code' => $areaName, 'source_type' => 'jam'],
-            ['name' => $areaName, 'sort_order' => 0],
-        );
-        $this->applyAreaDefMeta($area, $basePath);
+        if ($area === null) {
+            $areaName = strtoupper(basename($basePath));
+            $area = Area::firstOrCreate(
+                ['code' => $areaName, 'source_type' => 'jam'],
+                ['name' => $areaName, 'sort_order' => 0],
+            );
+            $this->applyAreaDefMeta($area, $basePath);
+        }
 
         $fhr = fopen($jhrPath, 'rb');
         $fdt = fopen($jdtPath, 'rb');
@@ -92,7 +94,7 @@ class JamImporter
             fclose($fdt);
         }
 
-        $area->update(['message_count' => $count]);
+        $area->update(['message_count' => Message::where('area_id', $area->id)->count()]);
 
         return $count;
     }
@@ -105,7 +107,7 @@ class JamImporter
             return 0;
         }
 
-        $count = 0;
+        $inserted = 0;
         $records = [];
 
         while (! feof($fhr)) {
@@ -142,38 +144,47 @@ class JamImporter
             $charset = CharsetDetector::detect($bodyRaw, $this->areaFallbackCharset($area->code));
             $body = $this->parseBody($bodyRaw);
 
+            $fromName = $this->toUtf8($fields[self::JAMSUB_SENDERNAME] ?? '', $charset);
+            $toName = $this->toUtf8($fields[self::JAMSUB_RECEIVERNAME] ?? '', $charset);
+            $subject = $this->toUtf8($fields[self::JAMSUB_SUBJECT] ?? '', $charset);
+            $postedAt = $hdr['datewritten'] ? Carbon::createFromTimestamp($hdr['datewritten']) : null;
+
+            $rawMsgid = isset($fields[self::JAMSUB_MSGID])
+                ? rtrim($fields[self::JAMSUB_MSGID], "\x00")
+                : null;
+            $externalId = $rawMsgid ?: $this->syntheticId($fromName, $toName, $subject, $postedAt?->toIso8601String(), $body);
+
             $records[] = [
                 'area_id' => $area->id,
                 'msgno' => $hdr['messagenumber'],
-                'from_name' => $this->toUtf8($fields[self::JAMSUB_SENDERNAME] ?? '', $charset),
+                'external_id' => $externalId,
+                'from_name' => $fromName,
                 'from_address' => $fields[self::JAMSUB_OADDRESS] ?? null,
-                'to_name' => $this->toUtf8($fields[self::JAMSUB_RECEIVERNAME] ?? '', $charset),
+                'to_name' => $toName,
                 'to_address' => $fields[self::JAMSUB_DADDRESS] ?? null,
-                'subject' => $this->toUtf8($fields[self::JAMSUB_SUBJECT] ?? '', $charset),
+                'subject' => $subject,
                 'body_text' => $this->toUtf8($body, $charset),
                 'attributes_raw' => $hdr['attribute'],
                 'reply_to_msgno' => $hdr['replyto'] ?: null,
                 'reply1st_msgno' => $hdr['reply1st'] ?: null,
                 'replynext_msgno' => $hdr['replynext'] ?: null,
-                'posted_at' => $hdr['datewritten'] ? Carbon::createFromTimestamp($hdr['datewritten']) : null,
+                'posted_at' => $postedAt,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
 
-            $count++;
-
             // Batch insert every 500 records
             if (count($records) >= 500) {
-                Message::insert($records);
+                $inserted += Message::insertOrIgnore($records);
                 $records = [];
             }
         }
 
         if ($records) {
-            Message::insert($records);
+            $inserted += Message::insertOrIgnore($records);
         }
 
-        return $count;
+        return $inserted;
     }
 
     /** Parse subfield block, returning [loid => data] map. */
@@ -194,30 +205,5 @@ class JamImporter
         }
 
         return $fields;
-    }
-
-    private function parseBody(string $raw): string
-    {
-        $raw = rtrim($raw, "\x00");
-        $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
-
-        return $raw;
-    }
-
-    private function toUtf8(string $str, string $charset = 'CP850'): string
-    {
-        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', $charset);
-    }
-
-    /** Find a file case-insensitively by extension. */
-    private function findFile(string $basePath, string $ext): ?string
-    {
-        foreach ([$ext, strtoupper($ext)] as $e) {
-            if (file_exists("{$basePath}.{$e}")) {
-                return "{$basePath}.{$e}";
-            }
-        }
-
-        return null;
     }
 }

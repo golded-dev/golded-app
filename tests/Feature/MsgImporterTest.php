@@ -89,6 +89,43 @@ it('returns count of imported messages', function () {
     expect($count)->toBe(3);
 });
 
+// ── MSGID deduplication ───────────────────────────────────────────────────────
+
+it('populates external_id for all imported MSG messages', function () {
+    ['dir' => $dir] = makeMsgArea();
+    copyRealMsg($dir, 1);
+    copyRealMsg($dir, 2);
+    $area = Area::factory()->create();
+
+    (new MsgImporter)->import($dir, $area);
+
+    expect(Message::whereNull('external_id')->count())->toBe(0);
+});
+
+it('uses the MSGID kludge as external_id when present in MSG file', function () {
+    ['dir' => $dir] = makeMsgArea();
+    copyRealMsg($dir, 1); // THE_SAFE/1.MSG has MSGID kludge in body
+    $area = Area::factory()->create();
+
+    (new MsgImporter)->import($dir, $area);
+
+    expect(Message::first()->external_id)->not->toStartWith('hash:');
+});
+
+it('re-importing the same MSG files is idempotent', function () {
+    ['dir' => $dir] = makeMsgArea();
+    copyRealMsg($dir, 1);
+    copyRealMsg($dir, 2);
+    $area = Area::factory()->create();
+
+    (new MsgImporter)->import($dir, $area);
+    $count = Message::count();
+
+    (new MsgImporter)->import($dir, $area);
+
+    expect(Message::count())->toBe($count);
+});
+
 // ── Artisan command ───────────────────────────────────────────────────────────
 
 it('imports all areas via artisan command', function () {
