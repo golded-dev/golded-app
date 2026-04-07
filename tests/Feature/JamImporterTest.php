@@ -1,6 +1,7 @@
 <?php
 
 use App\Import\JamImporter;
+use App\Models\Area;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -63,6 +64,41 @@ it('returns count of imported messages', function () {
 
     expect($count)->toBeGreaterThan(0)
         ->and($count)->toBe(Message::count());
+});
+
+// ── MSGID deduplication ───────────────────────────────────────────────────────
+
+it('populates external_id for all imported JAM messages', function () {
+    (new JamImporter)->import(jamTestBase());
+
+    expect(Message::whereNull('external_id')->count())->toBe(0);
+});
+
+it('uses the JAM MSGID subfield as external_id when present', function () {
+    // jtest1 has MSGID subfields — none should have the hash: synthetic fallback
+    (new JamImporter)->import(jamTestBase());
+
+    expect(Message::where('external_id', 'like', 'hash:%')->count())->toBe(0);
+});
+
+it('message_count reflects total messages in area after re-import', function () {
+    (new JamImporter)->import(jamTestBase());
+    $area = Area::first();
+    $realCount = $area->message_count;
+
+    (new JamImporter)->import(jamTestBase());
+    $area->refresh();
+
+    expect($area->message_count)->toBe($realCount);
+});
+
+it('re-importing the same JAM base is idempotent', function () {
+    (new JamImporter)->import(jamTestBase());
+    $count = Message::count();
+
+    (new JamImporter)->import(jamTestBase());
+
+    expect(Message::count())->toBe($count);
 });
 
 // ── Artisan command ───────────────────────────────────────────────────────────

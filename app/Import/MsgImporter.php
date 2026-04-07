@@ -59,25 +59,42 @@ class MsgImporter
             return;
         }
 
-        $fromName = $this->readField($raw, 0, 36);
-        $toName = $this->readField($raw, 36, 36);
-        $subject = $this->readField($raw, 72, 72);
-        $dateStr = $this->readField($raw, 144, 20);
         $attr = unpack('v', substr($raw, 186, 2))[1];
         $bodyRaw = substr($raw, self::HEADER_SIZE);
         $charset = CharsetDetector::detect($bodyRaw, $this->areaFallbackCharset($area->code));
-        $body = $this->parseBody($bodyRaw);
 
-        Message::create([
-            'area_id' => $area->id,
-            'msgno' => $msgno,
-            'subject' => $this->toUtf8($subject, $charset),
-            'from_name' => $this->toUtf8($fromName, $charset),
-            'to_name' => $this->toUtf8($toName, $charset),
-            'body_text' => $this->toUtf8($body, $charset),
-            'attributes_raw' => $attr,
-            'posted_at' => $this->parseDate($dateStr),
-        ]);
+        $fromName = $this->toUtf8($this->readField($raw, 0, 36), $charset);
+        $toName = $this->toUtf8($this->readField($raw, 36, 36), $charset);
+        $subject = $this->toUtf8($this->readField($raw, 72, 72), $charset);
+        $dateStr = $this->readField($raw, 144, 20);
+        $body = $this->parseBody($bodyRaw);
+        $postedAt = $this->parseDate($dateStr);
+
+        $externalId = $this->extractMsgid($bodyRaw)
+            ?? $this->syntheticId($fromName, $toName, $subject, $postedAt?->toIso8601String(), $body);
+
+        Message::firstOrCreate(
+            ['external_id' => $externalId],
+            [
+                'area_id' => $area->id,
+                'msgno' => $msgno,
+                'subject' => $subject,
+                'from_name' => $fromName,
+                'to_name' => $toName,
+                'body_text' => $this->toUtf8($body, $charset),
+                'attributes_raw' => $attr,
+                'posted_at' => $postedAt,
+            ],
+        );
+    }
+
+    private function extractMsgid(string $bodyRaw): ?string
+    {
+        if (preg_match('/\x01MSGID:\s*(.+?)[\r\n\x00]/s', $bodyRaw, $m)) {
+            return trim($m[1]);
+        }
+
+        return null;
     }
 
     /** Read a null-terminated, null-padded fixed-width field. */
@@ -90,24 +107,6 @@ class MsgImporter
         }
 
         return $field;
-    }
-
-    /** Strip kludge lines (start with \x01) and convert \r to \n. */
-    private function parseBody(string $raw): string
-    {
-        // Trim trailing null
-        $raw = rtrim($raw, "\x00");
-
-        // Convert hard CRs to newlines
-        $raw = str_replace("\r\n", "\n", $raw);
-        $raw = str_replace("\r", "\n", $raw);
-
-        return $raw;
-    }
-
-    private function toUtf8(string $str, string $charset = 'CP850'): string
-    {
-        return mb_convert_encoding($str, 'UTF-8', $charset);
     }
 
     private function parseDate(string $dateStr): ?Carbon

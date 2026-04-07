@@ -78,7 +78,7 @@ class SquishImporter
      * e.g. import('/path/to/NETMAIL')
      * Returns count of messages imported.
      */
-    public function import(string $basePath): int
+    public function import(string $basePath, ?Area $area = null): int
     {
         $sqdPath = $this->findFile($basePath, 'sqd');
         $sqiPath = $this->findFile($basePath, 'sqi');
@@ -87,12 +87,14 @@ class SquishImporter
             return 0;
         }
 
-        $areaName = strtoupper(basename($basePath));
-        $area = Area::firstOrCreate(
-            ['code' => $areaName, 'source_type' => 'squish'],
-            ['name' => $areaName, 'sort_order' => 0],
-        );
-        $this->applyAreaDefMeta($area, $basePath);
+        if ($area === null) {
+            $areaName = strtoupper(basename($basePath));
+            $area = Area::firstOrCreate(
+                ['code' => $areaName, 'source_type' => 'squish'],
+                ['name' => $areaName, 'sort_order' => 0],
+            );
+            $this->applyAreaDefMeta($area, $basePath);
+        }
 
         $fsqd = fopen($sqdPath, 'rb');
         $fsqi = fopen($sqiPath, 'rb');
@@ -104,7 +106,7 @@ class SquishImporter
             fclose($fsqi);
         }
 
-        $area->update(['message_count' => $count]);
+        $area->update(['message_count' => Message::where('area_id', $area->id)->count()]);
 
         return $count;
     }
@@ -117,7 +119,7 @@ class SquishImporter
             return 0;
         }
 
-        $count = 0;
+        $inserted = 0;
         $records = [];
 
         // Walk SQI index to get (offset, msgno) pairs
@@ -177,43 +179,51 @@ class SquishImporter
             // Decode replies[9] array: 9 × uint32 little-endian
             $replies = array_values(unpack('V9', $hdr['replies']));
 
+            $fromName = $this->toUtf8($hdr['from'], $charset);
+            $toName = $this->toUtf8($hdr['to'], $charset);
+            $subject = $this->toUtf8($hdr['subj'], $charset);
+            $postedAt = $this->parseDate($hdr['date_written']);
+
+            $externalId = $this->extractMsgid($ctlRaw)
+                ?? $this->syntheticId($fromName, $toName, $subject, $postedAt?->toIso8601String(), $this->parseBody($bodyRaw));
+
             $records[] = [
                 'area_id' => $area->id,
                 'msgno' => $idx['msgno'],
-                'from_name' => $this->toUtf8($hdr['from'], $charset),
-                'to_name' => $this->toUtf8($hdr['to'], $charset),
-                'subject' => $this->toUtf8($hdr['subj'], $charset),
+                'external_id' => $externalId,
+                'from_name' => $fromName,
+                'to_name' => $toName,
+                'subject' => $subject,
                 'body_text' => $this->toUtf8($body, $charset),
                 'attributes_raw' => $hdr['attr'],
                 'reply_to_msgno' => $hdr['replyto'] ?: null,
                 'reply1st_msgno' => $replies[0] ?: null,
                 'replynext_msgno' => null,  // Squish uses replies[] array, not linked list
-                'posted_at' => $this->parseDate($hdr['date_written']),
+                'posted_at' => $postedAt,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
 
-            $count++;
-
             if (count($records) >= 500) {
-                Message::insert($records);
+                $inserted += Message::insertOrIgnore($records);
                 $records = [];
             }
         }
 
         if ($records) {
-            Message::insert($records);
+            $inserted += Message::insertOrIgnore($records);
         }
 
-        return $count;
+        return $inserted;
     }
 
-    private function parseBody(string $raw): string
+    private function extractMsgid(string $ctlRaw): ?string
     {
-        $raw = rtrim($raw, "\x00");
-        $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
+        if (preg_match('/\x01MSGID:\s*(.+?)(?:\x01|\x00|$)/s', $ctlRaw, $m)) {
+            return trim($m[1]);
+        }
 
-        return $raw;
+        return null;
     }
 
     /**
@@ -274,21 +284,5 @@ class SquishImporter
         }
 
         return Carbon::create($year, $month, $day, $hour, $min, $sec);
-    }
-
-    private function toUtf8(string $str, string $charset = 'CP850'): string
-    {
-        return mb_convert_encoding(rtrim($str, "\x00"), 'UTF-8', $charset);
-    }
-
-    private function findFile(string $basePath, string $ext): ?string
-    {
-        foreach ([$ext, strtoupper($ext)] as $e) {
-            if (file_exists("{$basePath}.{$e}")) {
-                return "{$basePath}.{$e}";
-            }
-        }
-
-        return null;
     }
 }
