@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "050604c0472a9243b78a6c64f572af0f",
+    "content-hash": "214bfad3bdc60c76c60d9755d1ddce8d",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -683,6 +683,280 @@
                 }
             ],
             "time": "2025-12-03T09:33:47+00:00"
+        },
+        {
+            "name": "golded-dev/laravel-ftn",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../laravel-ftn",
+                "reference": "ce5ba79140075504d9b582fbb0c50acbca4adb94"
+            },
+            "require": {
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "odinns/coding-style": "^1.0.1",
+                "odinns/phpstan-pest-this": "^1.0",
+                "pestphp/pest": "^4.4",
+                "phpstan/phpstan": "^2.1",
+                "rector/rector": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Golded\\Ftn\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Golded\\Ftn\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "test:types": [
+                    "phpstan analyse"
+                ],
+                "test:refactor": [
+                    "rector process --dry-run"
+                ],
+                "test:all": [
+                    "@test",
+                    "@test:types",
+                    "@test:refactor"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "Shared FTN message-base reader contracts and value objects.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "golded-dev/laravel-ftn-hudson",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../laravel-ftn-hudson",
+                "reference": "95435bd83001d624833d116759a94852a27b2c4d"
+            },
+            "require": {
+                "golded-dev/laravel-ftn": "*@dev",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "odinns/coding-style": "^1.0.1",
+                "odinns/phpstan-pest-this": "^1.0",
+                "pestphp/pest": "^4.4",
+                "phpstan/phpstan": "^2.1",
+                "rector/rector": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Golded\\Ftn\\Hudson\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Golded\\Ftn\\Hudson\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "test:types": [
+                    "phpstan analyse"
+                ],
+                "test:refactor": [
+                    "rector process --dry-run"
+                ],
+                "test:all": [
+                    "@test",
+                    "@test:types",
+                    "@test:refactor"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "FTN Hudson message-base reader.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "golded-dev/laravel-ftn-jam",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../laravel-ftn-jam",
+                "reference": "cac380893c59646e7d2c53597e09d6b8c011f832"
+            },
+            "require": {
+                "golded-dev/laravel-ftn": "*@dev",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "odinns/coding-style": "^1.0.1",
+                "odinns/phpstan-pest-this": "^1.0",
+                "pestphp/pest": "^4.4",
+                "phpstan/phpstan": "^2.1",
+                "rector/rector": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Golded\\Ftn\\Jam\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Golded\\Ftn\\Jam\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "test:types": [
+                    "phpstan analyse"
+                ],
+                "test:refactor": [
+                    "rector process --dry-run"
+                ],
+                "test:all": [
+                    "@test",
+                    "@test:types",
+                    "@test:refactor"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "FTN JAM message-base reader.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "golded-dev/laravel-ftn-msg",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../laravel-ftn-msg",
+                "reference": "3b0422d5a266f88daeef848c0d3977b3b865e8ee"
+            },
+            "require": {
+                "golded-dev/laravel-ftn": "*@dev",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "odinns/coding-style": "^1.0.1",
+                "odinns/phpstan-pest-this": "^1.0",
+                "pestphp/pest": "^4.4",
+                "phpstan/phpstan": "^2.1",
+                "rector/rector": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Golded\\Ftn\\Msg\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Golded\\Ftn\\Msg\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "test:types": [
+                    "phpstan analyse"
+                ],
+                "test:refactor": [
+                    "rector process --dry-run"
+                ],
+                "test:all": [
+                    "@test",
+                    "@test:types",
+                    "@test:refactor"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "FTN .MSG message-base reader.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
+        },
+        {
+            "name": "golded-dev/laravel-ftn-squish",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../laravel-ftn-squish",
+                "reference": "21967b92b1013b906015c89d89caf32914f740cd"
+            },
+            "require": {
+                "golded-dev/laravel-ftn": "*@dev",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "odinns/coding-style": "^1.0.1",
+                "odinns/phpstan-pest-this": "^1.0",
+                "pestphp/pest": "^4.4",
+                "phpstan/phpstan": "^2.1",
+                "rector/rector": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Golded\\Ftn\\Squish\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Golded\\Ftn\\Squish\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "pest"
+                ],
+                "test:types": [
+                    "phpstan analyse"
+                ],
+                "test:refactor": [
+                    "rector process --dry-run"
+                ],
+                "test:all": [
+                    "@test",
+                    "@test:types",
+                    "@test:refactor"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "FTN Squish message-base reader.",
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         },
         {
             "name": "graham-campbell/result-type",
@@ -10026,6 +10300,11 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "golded-dev/laravel-ftn": 20,
+        "golded-dev/laravel-ftn-hudson": 20,
+        "golded-dev/laravel-ftn-jam": 20,
+        "golded-dev/laravel-ftn-msg": 20,
+        "golded-dev/laravel-ftn-squish": 20,
         "nunomaduro/pao": 20
     },
     "prefer-stable": true,
