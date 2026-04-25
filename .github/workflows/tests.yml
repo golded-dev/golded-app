@@ -3,24 +3,31 @@ name: tests
 on:
   push:
     branches:
-      - develop
       - main
-      - master
-      - workos
   pull_request:
-    branches:
-      - develop
-      - main
-      - master
-      - workos
 
 jobs:
   ci:
     runs-on: ubuntu-latest
-    environment: Testing
+
     strategy:
+      fail-fast: false
       matrix:
-        php-version: ['8.3', '8.4', '8.5']
+        database: [sqlite, mysql]
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: golded_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -29,23 +36,25 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php-version }}
+          php-version: '8.4'
           tools: composer:v2
-          coverage: xdebug
+          coverage: none
+          extensions: pdo_sqlite, pdo_mysql
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: '22'
+          cache: npm
 
-      - name: Install Node Dependencies
-        run: npm i
+      - name: Validate Composer metadata
+        run: composer validate --strict
 
-      - name: Add Flux Credentials Loaded From ENV
-        run: composer config http-basic.composer.fluxui.dev "${{ secrets.FLUX_USERNAME }}" "${{ secrets.FLUX_LICENSE_KEY }}"
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Copy Environment File
         run: cp .env.example .env
@@ -53,8 +62,44 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
+      - name: Configure SQLite
+        if: matrix.database == 'sqlite'
+        run: |
+          touch database/database.sqlite
+          php artisan config:clear
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
+      - name: Configure MySQL
+        if: matrix.database == 'mysql'
+        run: php artisan config:clear
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: golded_test
+          DB_USERNAME: root
+          DB_PASSWORD: password
+
       - name: Build Assets
         run: npm run build
 
-      - name: Run Tests
-        run: ./vendor/bin/pest
+      - name: Pint
+        run: composer lint:check
+
+      - name: PHPStan
+        run: composer test:types
+
+      - name: Rector
+        run: composer test:refactor
+
+      - name: Pest
+        run: php artisan test --compact
+        env:
+          DB_CONNECTION: ${{ matrix.database }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: ${{ matrix.database == 'sqlite' && 'database/database.sqlite' || 'golded_test' }}
+          DB_USERNAME: root
+          DB_PASSWORD: password

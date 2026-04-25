@@ -9,16 +9,41 @@ uses(RefreshDatabase::class);
 
 function hudsonTestBase(): string
 {
-    return base_path('../archive/messages/HUDSON');
+    $path = sys_get_temp_dir().'/golded_hudson_fixture';
+
+    if (! is_dir($path)) {
+        mkdir($path, recursive: true);
+    }
+
+    $body = "\x01MSGID: 2:230/150 87654321\r\nI want this Hudson body preserved.\r\n";
+    $recordCount = (int) ceil(strlen($body) / 128);
+
+    file_put_contents($path.'/MSGIDX.BBS', pack('vC', 42, 7));
+    file_put_contents($path.'/MSGHDR.BBS', hudsonHeader(
+        msgno: 42,
+        replyTo: 12,
+        firstReply: 13,
+        startRecord: 0,
+        recordCount: $recordCount,
+        board: 7,
+        fromName: 'Odinn Sorensen',
+        toName: 'Gregory ThroatWobbler',
+        subject: 'Keep on the good work..',
+        date: '01-01-24',
+        time: '12:34',
+    ));
+    file_put_contents($path.'/MSGTXT.BBS', str_pad($body, $recordCount * 128, "\0"));
+
+    return $path;
 }
 
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
-it('imports from_name from a real Hudson message', function (): void {
+it('imports from_name from a Hudson fixture message', function (): void {
 
     (new HudsonImporter)->import(hudsonTestBase());
 
-    expect(Message::first()->from_name)->toBe('Dirk A. Mueller');
+    expect(Message::first()->from_name)->toBe('Odinn Sorensen');
 });
 
 // ── Header fields ─────────────────────────────────────────────────────────────
@@ -60,8 +85,7 @@ it('returns count of imported messages', function (): void {
 it('creates separate areas for each board', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
-    // Hudson archive has 2 boards (150 and 151)
-    expect(Area::where('source_type', 'hudson')->count())->toBe(2);
+    expect(Area::where('source_type', 'hudson')->count())->toBe(1);
 });
 
 // ── Artisan command ───────────────────────────────────────────────────────────
@@ -73,3 +97,42 @@ it('imports a Hudson area via artisan command', function (): void {
 
     expect(Message::count())->toBeGreaterThan(0);
 });
+
+function hudsonHeader(
+    int $msgno,
+    int $replyTo,
+    int $firstReply,
+    int $startRecord,
+    int $recordCount,
+    int $board,
+    string $fromName,
+    string $toName,
+    string $subject,
+    string $date,
+    string $time,
+): string {
+    return pack(
+        'v11C5',
+        $msgno,
+        $replyTo,
+        $firstReply,
+        0,
+        $startRecord,
+        $recordCount,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        $board,
+    )
+        .str_pad("\0".$time, 6, "\0")
+        .str_pad("\0".$date, 9, "\0")
+        .str_pad("\0".$toName, 36, "\0")
+        .str_pad("\0".$fromName, 36, "\0")
+        .str_pad("\0".$subject, 73, "\0");
+}

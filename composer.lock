@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5bb05bab3fcab669ce3918eb248b7579",
+    "content-hash": "ef951d20c6f51a6fd949ccecbf5d1aa1",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -7860,96 +7860,6 @@
             "time": "2026-03-31T21:51:27+00:00"
         },
         {
-            "name": "nunomaduro/pao",
-            "version": "0.x-dev",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/nunomaduro/pao.git",
-                "reference": "65f3081a683bbc2065a5bd9f81a1e7bc16e3dc84"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/nunomaduro/pao/zipball/65f3081a683bbc2065a5bd9f81a1e7bc16e3dc84",
-                "reference": "65f3081a683bbc2065a5bd9f81a1e7bc16e3dc84",
-                "shasum": ""
-            },
-            "require": {
-                "ext-simplexml": "*",
-                "php": "^8.3",
-                "shipfastlabs/agent-detector": "^1.1.0"
-            },
-            "conflict": {
-                "nunomaduro/collision": "<8.9.2",
-                "pestphp/pest": "<4.4.3 || >=6.0",
-                "phpunit/phpunit": "<12.5.14 || >=13.0.0 <13.0.5 || >=14.0"
-            },
-            "require-dev": {
-                "brianium/paratest": "^7.20",
-                "laravel/pint": "^1.29.0",
-                "pestphp/pest": "^4.4.3 || ^5.0.0",
-                "pestphp/pest-plugin-type-coverage": "^4.0.3 || ^5.0.0",
-                "phpstan/phpstan": "^2.1.46",
-                "rector/rector": "^2.3.9",
-                "symfony/process": "^7.4.5 || ^8.0.8",
-                "symfony/var-dumper": "^7.4.6 || ^8.0.8"
-            },
-            "default-branch": true,
-            "type": "library",
-            "extra": {
-                "pest": {
-                    "plugins": [
-                        "Pao\\Drivers\\Pest\\Plugin"
-                    ]
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/Autoload.php"
-                ],
-                "psr-4": {
-                    "Pao\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Nuno Maduro",
-                    "email": "enunomaduro@gmail.com"
-                }
-            ],
-            "description": "Agent-optimized output for PHP testing tools",
-            "keywords": [
-                "Agent",
-                "json",
-                "pest",
-                "php",
-                "phpunit",
-                "testing"
-            ],
-            "support": {
-                "issues": "https://github.com/nunomaduro/pao/issues",
-                "source": "https://github.com/nunomaduro/pao/tree/0.x"
-            },
-            "funding": [
-                {
-                    "url": "https://www.paypal.com/paypalme/enunomaduro",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/nunomaduro",
-                    "type": "github"
-                },
-                {
-                    "url": "https://www.patreon.com/nunomaduro",
-                    "type": "patreon"
-                }
-            ],
-            "time": "2026-04-01T14:11:09+00:00"
-        },
-        {
             "name": "odinns/coding-style",
             "version": "1.0.1",
             "source": {
@@ -10797,13 +10707,11 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "nunomaduro/pao": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

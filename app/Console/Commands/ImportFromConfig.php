@@ -12,13 +12,13 @@ use Illuminate\Console\Command;
 
 class ImportFromConfig extends Command
 {
-    protected $signature = 'golded:import-config {--root= : Root path to map M:\\ to (default: ../archive/messages relative to project root)}';
+    protected $signature = 'golded:import-config {--root= : Root path to map M:\\ to (default: samples relative to project root)}';
 
     protected $description = 'Import messages from all areas defined in config/golded.php';
 
     public function handle(): int
     {
-        $root = rtrim($this->option('root') ?? base_path('../archive/messages'), '/');
+        $root = rtrim($this->option('root') ?? base_path('samples'), '/');
         $areas = config('golded.areas', []);
         $total = 0;
 

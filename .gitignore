@@ -17,6 +17,9 @@ npm-debug.log
 yarn-error.log
 /auth.json
 /.fleet
+/.agents
+/.claude
+/.cursor
 /.idea
 /.nova
 /.vscode

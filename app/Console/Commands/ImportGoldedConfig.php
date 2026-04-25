@@ -9,13 +9,13 @@ use Illuminate\Console\Command;
 
 class ImportGoldedConfig extends Command
 {
-    protected $signature = 'golded:config {path? : Path to GOLDED.CFG (defaults to ../archive/config/GOLDED.CFG)}';
+    protected $signature = 'golded:config {path? : Path to GOLDED.CFG (defaults to samples/config/GOLDED.CFG)}';
 
     protected $description = 'Parse GOLDED.CFG and write config/golded.php';
 
     public function handle(): int
     {
-        $path = $this->argument('path') ?? base_path('../archive/config/GOLDED.CFG');
+        $path = $this->argument('path') ?? base_path('samples/config/GOLDED.CFG');
 
         if (! file_exists($path)) {
             $this->error("Config file not found: {$path}");

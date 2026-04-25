@@ -13,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('areas', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('dataset_id')->constrained()->cascadeOnDelete();
             $table->string('code');
             $table->string('name');
             $table->string('echoid')->nullable();
             $table->char('group_id', 1)->nullable();
+            $table->string('source_type')->nullable();
+            $table->string('area_type')->nullable();
             $table->unsignedInteger('sort_order')->default(0);
             $table->unsignedInteger('message_count')->nullable();
             $table->unsignedInteger('unread_count')->nullable();

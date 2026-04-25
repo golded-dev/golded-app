@@ -1,15 +1,28 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "golded-dev/golded-app",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "A browser and terminal remake of GoldED for reading imported FTN message bases.",
     "keywords": [
+        "fidonet",
+        "ftn",
+        "golded",
         "laravel",
-        "framework"
+        "message-base"
     ],
+    "homepage": "https://github.com/golded-dev/golded-app",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "GoldED.dev contributors"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/golded-dev/golded-app/issues",
+        "source": "https://github.com/golded-dev/golded-app"
+    },
     "require": {
-        "php": "^8.3",
+        "php": "^8.4",
         "laravel/fortify": "^1.34",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
@@ -29,7 +42,6 @@
         "laravel/sail": "^1.53",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9",
-        "nunomaduro/pao": "0.x-dev",
         "odinns/coding-style": "^1.0.1",
         "odinns/phpstan-pest-this": "^1.0",
         "pestphp/pest": "^4.4",

@@ -6,20 +6,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-/**
- * Override golded config to a single controlled area for test isolation.
- * Uses real archive fixture data, but limits scope to one area.
- */
-function withSingleSquishArea(callable $callback): void
+function withSingleMsgArea(callable $callback): void
 {
     config([
         'golded.areas' => [
-            'M:\SQUISH\TEST\STEST1' => [
-                'echoid' => 'TEST.SQUISH',
-                'description' => 'Test Squish area',
+            'M:\msg\DEMO' => [
+                'echoid' => 'GOLDED.DEMO',
+                'description' => 'Synthetic GoldED demo area',
                 'group_id' => 'T',
                 'area_type' => 'Echo',
-                'format' => 'squish',
+                'format' => 'opus',
             ],
         ],
     ]);
@@ -29,23 +25,23 @@ function withSingleSquishArea(callable $callback): void
 
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
-it('imports a Squish area by its echoid from config', function (): void {
-    withSingleSquishArea(function (): void {
-        $root = base_path('../archive/messages');
+it('imports a MSG area by its echoid from config', function (): void {
+    withSingleMsgArea(function (): void {
+        $root = base_path('samples');
 
         $this->artisan('golded:import-config', ['--root' => $root])
             ->assertExitCode(0);
 
-        expect(Area::where('code', 'TEST.SQUISH')->exists())->toBeTrue()
-            ->and(Message::count())->toBeGreaterThan(0);
+        expect(Area::where('code', 'GOLDED.DEMO')->exists())->toBeTrue()
+            ->and(Message::count())->toBe(1);
     });
 });
 
 // ── Idempotency ───────────────────────────────────────────────────────────────
 
 it('running import-config twice does not duplicate areas or messages', function (): void {
-    withSingleSquishArea(function (): void {
-        $root = base_path('../archive/messages');
+    withSingleMsgArea(function (): void {
+        $root = base_path('samples');
 
         $this->artisan('golded:import-config', ['--root' => $root])->assertExitCode(0);
         $areaCount = Area::count();
@@ -65,19 +61,19 @@ it('skips integer-keyed config entries without error', function (): void {
         'golded.areas' => [
             1 => ['echoid' => 'HUDSON.1', 'format' => 'hudson'],
             2 => ['echoid' => 'HUDSON.2', 'format' => 'hudson'],
-            'M:\SQUISH\TEST\STEST1' => [
-                'echoid' => 'TEST.SQUISH',
-                'description' => 'Test Squish area',
+            'M:\msg\DEMO' => [
+                'echoid' => 'GOLDED.DEMO',
+                'description' => 'Synthetic GoldED demo area',
                 'group_id' => 'T',
                 'area_type' => 'Echo',
-                'format' => 'squish',
+                'format' => 'opus',
             ],
         ],
     ]);
 
-    $this->artisan('golded:import-config', ['--root' => base_path('../archive/messages')])
+    $this->artisan('golded:import-config', ['--root' => base_path('samples')])
         ->assertExitCode(0);
 
     expect(Area::where('code', 'HUDSON.1')->exists())->toBeFalse()
-        ->and(Area::where('code', 'TEST.SQUISH')->exists())->toBeTrue();
+        ->and(Area::where('code', 'GOLDED.DEMO')->exists())->toBeTrue();
 });
