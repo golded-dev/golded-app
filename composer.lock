@@ -690,7 +690,7 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ftn",
-                "reference": "ce5ba79140075504d9b582fbb0c50acbca4adb94"
+                "reference": "6a219245d2dac34e78bd271cd801669236a1ca76"
             },
             "require": {
                 "php": "^8.4"
@@ -744,7 +744,7 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ftn-hudson",
-                "reference": "95435bd83001d624833d116759a94852a27b2c4d"
+                "reference": "e38fa7213e0bc859872214c1beacd76af253f6b4"
             },
             "require": {
                 "golded-dev/laravel-ftn": "*@dev",
@@ -799,7 +799,7 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ftn-jam",
-                "reference": "cac380893c59646e7d2c53597e09d6b8c011f832"
+                "reference": "e932531931c7153bbfc503c3cd5d6ea10dc71517"
             },
             "require": {
                 "golded-dev/laravel-ftn": "*@dev",
@@ -854,7 +854,7 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ftn-msg",
-                "reference": "3b0422d5a266f88daeef848c0d3977b3b865e8ee"
+                "reference": "73f4a0e2179751d23755cddf87caf895ae9a2288"
             },
             "require": {
                 "golded-dev/laravel-ftn": "*@dev",
@@ -909,7 +909,7 @@
             "dist": {
                 "type": "path",
                 "url": "../laravel-ftn-squish",
-                "reference": "21967b92b1013b906015c89d89caf32914f740cd"
+                "reference": "4d46e8667cf38d982ecbf4ca0affda0e2d99d60b"
             },
             "require": {
                 "golded-dev/laravel-ftn": "*@dev",
