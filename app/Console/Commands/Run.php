@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Golded\AnsiRenderer;
@@ -38,7 +40,7 @@ class Run extends Command
 
                 $key = $io->readKey();
 
-                if ($key === 'q' || $key === 'Ctrl+q' || $key === 'Ctrl+c') {
+                if (in_array($key, ['q', 'Ctrl+q', 'Ctrl+c'], true)) {
                     break;
                 }
 

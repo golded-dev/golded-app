@@ -2,7 +2,7 @@
 
 use App\Golded\HtmlRenderer;
 
-it('wraps segment in span with class', function () {
+it('wraps segment in span with class', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [[['Hello', 'cga-black-lgrey']]];
 
@@ -11,7 +11,7 @@ it('wraps segment in span with class', function () {
     expect($lines[0])->toContain('<span class="cga-black-lgrey">Hello</span>');
 });
 
-it('renders multiple segments on one row', function () {
+it('renders multiple segments on one row', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [[['foo', 'cga-black-lgrey'], ['bar', 'cga-blue-lgrey']]];
 
@@ -22,18 +22,18 @@ it('renders multiple segments on one row', function () {
         ->toContain('<span class="cga-blue-lgrey">bar</span>');
 });
 
-it('HTML-escapes segment text', function () {
+it('HTML-escapes segment text', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [[['<b>bold</b>', 'cga-black-lgrey']]];
 
     $lines = $renderer->renderScreen($screen, 80);
 
     expect($lines[0])
-        ->toContain('&lt;b&gt;bold&lt;/b&gt;')
-        ->not->toContain('<b>bold</b>');
+        ->toContain('&lt;b&gt;bold&lt;/b&gt;');
+    expect($lines[0])->not()->toContain('<b>bold</b>');
 });
 
-it('pads short rows to $cols with spaces', function () {
+it('pads short rows to $cols with spaces', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [[['Hi', 'cga-black-lgrey']]];
 
@@ -44,7 +44,7 @@ it('pads short rows to $cols with spaces', function () {
     expect(mb_strlen($plain))->toBe(10);
 });
 
-it('returns one HTML string per screen row', function () {
+it('returns one HTML string per screen row', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [
         [['row one', 'cga-black-lgrey']],
@@ -58,7 +58,7 @@ it('returns one HTML string per screen row', function () {
         ->and($lines[1])->toContain('row two');
 });
 
-it('renders ampersands correctly escaped', function () {
+it('renders ampersands correctly escaped', function (): void {
     $renderer = new HtmlRenderer;
     $screen = [[['a & b', 'cga-black-lgrey']]];
 

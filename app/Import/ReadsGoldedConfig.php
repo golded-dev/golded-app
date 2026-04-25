@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Import;
 
 use App\Models\Area;
@@ -51,7 +53,7 @@ trait ReadsGoldedConfig
             $updates['area_type'] = $def['area_type'];
         }
 
-        if (! empty($updates)) {
+        if ($updates !== []) {
             $area->update($updates);
         }
     }
@@ -69,9 +71,8 @@ trait ReadsGoldedConfig
     private function parseBody(string $raw): string
     {
         $raw = rtrim($raw, "\x00");
-        $raw = str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
 
-        return $raw;
+        return str_replace(["\r\n", "\r"], ["\n", "\n"], $raw);
     }
 
     /** Convert a string from the given charset to UTF-8, stripping trailing nulls. */

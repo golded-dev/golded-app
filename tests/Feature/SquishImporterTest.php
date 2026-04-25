@@ -14,7 +14,7 @@ function squishTestBase(): string
 
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
-it('imports from_name from a real Squish message', function () {
+it('imports from_name from a real Squish message', function (): void {
 
     (new SquishImporter)->import(squishTestBase());
 
@@ -23,29 +23,29 @@ it('imports from_name from a real Squish message', function () {
 
 // ── Header fields ─────────────────────────────────────────────────────────────
 
-it('imports to_name and subject', function () {
+it('imports to_name and subject', function (): void {
     (new SquishImporter)->import(squishTestBase());
 
     expect(Message::first()->to_name)->not->toBeEmpty();
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
-it('imports body text including kludge lines', function () {
+it('imports body text including kludge lines', function (): void {
     // SQUISH/INT/GOLDED has messages with MSGID kludges; STEST1 doesn't
     (new SquishImporter)->import(base_path('../archive/messages/SQUISH/INT/GOLDED'));
 
     // At least one message in this area has MSGID kludges
-    $hasKludge = Message::all()->contains(fn ($m) => str_contains($m->body_text, "\x01"));
+    $hasKludge = Message::all()->contains(fn ($m): bool => str_contains((string) $m->body_text, "\x01"));
     expect($hasKludge)->toBeTrue();
 });
 
-it('imports posted_at as a valid date', function () {
+it('imports posted_at as a valid date', function (): void {
     (new SquishImporter)->import(squishTestBase());
 
     expect(Message::first()->posted_at)->not->toBeNull();
 });
 
-it('stores reply links', function () {
+it('stores reply links', function (): void {
     (new SquishImporter)->import(squishTestBase());
 
     // Fields are importable without error; some areas have reply chains
@@ -53,7 +53,7 @@ it('stores reply links', function () {
     expect(Message::whereNotNull('reply_to_msgno')->count())->toBeGreaterThanOrEqual(0);
 });
 
-it('returns count of imported messages', function () {
+it('returns count of imported messages', function (): void {
     $count = (new SquishImporter)->import(squishTestBase());
 
     expect($count)->toBeGreaterThan(0)
@@ -62,26 +62,26 @@ it('returns count of imported messages', function () {
 
 // ── MSGID deduplication ───────────────────────────────────────────────────────
 
-it('populates external_id for all imported Squish messages', function () {
+it('populates external_id for all imported Squish messages', function (): void {
     (new SquishImporter)->import(squishTestBase());
 
     expect(Message::whereNull('external_id')->count())->toBe(0);
 });
 
-it('uses the MSGID kludge from the control block as external_id for STEST1 messages', function () {
+it('uses the MSGID kludge from the control block as external_id for STEST1 messages', function (): void {
     // STEST1 has MSGID kludges in the control block — none should be synthetic
     (new SquishImporter)->import(squishTestBase());
 
     expect(Message::where('external_id', 'like', 'hash:%')->count())->toBe(0);
 });
 
-it('uses the MSGID kludge as external_id when present in Squish message', function () {
+it('uses the MSGID kludge as external_id when present in Squish message', function (): void {
     (new SquishImporter)->import(base_path('../archive/messages/SQUISH/INT/GOLDED'));
 
     expect(Message::where('external_id', 'not like', 'hash:%')->count())->toBeGreaterThan(0);
 });
 
-it('message_count reflects total messages in area after re-import', function () {
+it('message_count reflects total messages in area after re-import', function (): void {
     (new SquishImporter)->import(squishTestBase());
     $area = Area::first();
     $realCount = $area->message_count;
@@ -92,7 +92,7 @@ it('message_count reflects total messages in area after re-import', function () 
     expect($area->message_count)->toBe($realCount);
 });
 
-it('re-importing the same Squish base is idempotent', function () {
+it('re-importing the same Squish base is idempotent', function (): void {
     (new SquishImporter)->import(squishTestBase());
     $count = Message::count();
 
@@ -103,7 +103,7 @@ it('re-importing the same Squish base is idempotent', function () {
 
 // ── Artisan command ───────────────────────────────────────────────────────────
 
-it('imports a Squish area via artisan command', function () {
+it('imports a Squish area via artisan command', function (): void {
     $path = base_path('../archive/messages/SQUISH/TEST');
 
     $this->artisan("golded:import squish {$path}")->assertExitCode(0);
@@ -111,7 +111,7 @@ it('imports a Squish area via artisan command', function () {
     expect(Message::count())->toBeGreaterThan(0);
 });
 
-it('--fresh wipes and re-imports without duplicating messages', function () {
+it('--fresh wipes and re-imports without duplicating messages', function (): void {
     $path = base_path('../archive/messages/SQUISH/TEST');
 
     $this->artisan("golded:import squish {$path}")->assertExitCode(0);

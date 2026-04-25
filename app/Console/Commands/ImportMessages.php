@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Import\HudsonImporter;
@@ -32,12 +34,17 @@ class ImportMessages extends Command
             $this->line("  Dropped {$deleted} existing {$format} areas (cascades messages).");
         }
 
+        if (! in_array($format, ['msg', 'jam', 'squish', 'hudson'], true)) {
+            $this->error("Unsupported format: {$format}");
+
+            return self::FAILURE;
+        }
+
         return match ($format) {
             'msg' => $this->importMsg($path),
             'jam' => $this->importJam($path),
             'squish' => $this->importSquish($path),
             'hudson' => $this->importHudson($path),
-            default => $this->error("Unsupported format: {$format}") ?: self::FAILURE,
         };
     }
 
@@ -70,9 +77,9 @@ class ImportMessages extends Command
         $total = 0;
 
         foreach ($this->findJhrFiles($basePath) as $jhrFile) {
-            $base = preg_replace('/\.(JHR|jhr)$/', '', $jhrFile);
+            $base = preg_replace('/\.(JHR|jhr)$/', '', (string) $jhrFile);
             $count = $importer->import($base);
-            $areaName = strtoupper(basename($base));
+            $areaName = strtoupper(basename((string) $base));
             $this->line("  {$areaName}: {$count} messages");
             $total += $count;
         }
@@ -88,9 +95,9 @@ class ImportMessages extends Command
         $total = 0;
 
         foreach ($this->findSqdFiles($basePath) as $sqdFile) {
-            $base = preg_replace('/\.(SQD|sqd)$/', '', $sqdFile);
+            $base = preg_replace('/\.(SQD|sqd)$/', '', (string) $sqdFile);
             $count = $importer->import($base);
-            $areaName = strtoupper(basename($base));
+            $areaName = strtoupper(basename((string) $base));
             $this->line("  {$areaName}: {$count} messages");
             $total += $count;
         }

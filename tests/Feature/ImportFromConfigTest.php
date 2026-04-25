@@ -29,8 +29,8 @@ function withSingleSquishArea(callable $callback): void
 
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
-it('imports a Squish area by its echoid from config', function () {
-    withSingleSquishArea(function () {
+it('imports a Squish area by its echoid from config', function (): void {
+    withSingleSquishArea(function (): void {
         $root = base_path('../archive/messages');
 
         $this->artisan('golded:import-config', ['--root' => $root])
@@ -43,8 +43,8 @@ it('imports a Squish area by its echoid from config', function () {
 
 // ── Idempotency ───────────────────────────────────────────────────────────────
 
-it('running import-config twice does not duplicate areas or messages', function () {
-    withSingleSquishArea(function () {
+it('running import-config twice does not duplicate areas or messages', function (): void {
+    withSingleSquishArea(function (): void {
         $root = base_path('../archive/messages');
 
         $this->artisan('golded:import-config', ['--root' => $root])->assertExitCode(0);
@@ -60,7 +60,7 @@ it('running import-config twice does not duplicate areas or messages', function 
 
 // ── Integer key (Hudson board) skipping ───────────────────────────────────────
 
-it('skips integer-keyed config entries without error', function () {
+it('skips integer-keyed config entries without error', function (): void {
     config([
         'golded.areas' => [
             1 => ['echoid' => 'HUDSON.1', 'format' => 'hudson'],

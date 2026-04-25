@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Config;
 
 class GoldedConfigParser
@@ -63,11 +65,16 @@ class GoldedConfigParser
 
         while ($i <= $end) {
             $raw = $lines[$i];
-            $line = trim($raw);
+            $line = trim((string) $raw);
             $i++;
-
             // Skip blank lines and comments
-            if ($line === '' || str_starts_with($line, ';') || preg_match('/^rem\b/i', $line)) {
+            if ($line === '') {
+                continue;
+            }
+            if (str_starts_with($line, ';')) {
+                continue;
+            }
+            if (preg_match('/^rem\b/i', $line)) {
                 continue;
             }
 
@@ -86,19 +93,20 @@ class GoldedConfigParser
                 if ($active) {
                     // Parse IF branch, skip ELSE branch
                     $this->processLines($lines, $i, $elseIdx !== null ? $elseIdx - 1 : $endifIdx - 1, $baseDir, $result);
-                } else {
+                } elseif ($elseIdx !== null) {
                     // Skip IF branch, parse ELSE branch if present
-                    if ($elseIdx !== null) {
-                        $this->processLines($lines, $elseIdx + 1, $endifIdx - 1, $baseDir, $result);
-                    }
+                    $this->processLines($lines, $elseIdx + 1, $endifIdx - 1, $baseDir, $result);
                 }
 
                 $i = $endifIdx + 1;
 
                 continue;
             }
-
-            if (preg_match('/^ELSE\b/i', $line) || preg_match('/^ENDIF\b/i', $line)) {
+            if (preg_match('/^ELSE\b/i', $line)) {
+                // Should be consumed by the IF handler above, but guard just in case
+                continue;
+            }
+            if (preg_match('/^ENDIF\b/i', $line)) {
                 // Should be consumed by the IF handler above, but guard just in case
                 continue;
             }
@@ -134,7 +142,7 @@ class GoldedConfigParser
         $endifIdx = $end;
 
         for ($i = $start; $i <= $end; $i++) {
-            $line = trim($lines[$i]);
+            $line = trim((string) $lines[$i]);
 
             if (preg_match('/^IF\b/i', $line)) {
                 $depth++;

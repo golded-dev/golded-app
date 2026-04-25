@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Database\Factories\DatasetFactory;
@@ -14,11 +16,17 @@ class Dataset extends Model
 
     protected $fillable = ['name', 'source_type'];
 
+    /**
+     * @return HasMany<Area, $this>
+     */
     public function areas(): HasMany
     {
         return $this->hasMany(Area::class);
     }
 
+    /**
+     * @return HasMany<Message, $this>
+     */
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);

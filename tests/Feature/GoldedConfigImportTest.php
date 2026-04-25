@@ -9,7 +9,7 @@ function cfgPath(): string
 
 // ── Tracer bullet ────────────────────────────────────────────────────────────
 
-it('extracts username from GOLDED.CFG', function () {
+it('extracts username from GOLDED.CFG', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     expect($config['username'])->toBe('Odinn Sorensen');
@@ -17,28 +17,28 @@ it('extracts username from GOLDED.CFG', function () {
 
 // ── Field extraction ─────────────────────────────────────────────────────────
 
-it('extracts address', function () {
+it('extracts address', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     expect($config['address'])->toBe('2:236/77');
 });
 
-it('extracts global charset_import', function () {
+it('extracts global charset_import', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     expect($config['charset_import'])->toBe('CP850');
 });
 
-it('extracts multiple origin lines', function () {
+it('extracts multiple origin lines', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     expect($config['origins'])
         ->toBeArray()
-        ->not->toBeEmpty()
         ->toContain('http://www.goldware.dk * e-mail: odinn@goldware.dk');
+    expect($config['origins'])->not()->toBeEmpty();
 });
 
-it('extracts tearline', function () {
+it('extracts tearline', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     expect($config['tearline'])->toBe('@longpid @version');
@@ -46,29 +46,26 @@ it('extracts tearline', function () {
 
 // ── Conditional blocks ───────────────────────────────────────────────────────
 
-it('skips IF 0 blocks', function () {
+it('skips IF 0 blocks', function (): void {
     $config = (new GoldedConfigParser)->parse(cfgPath());
 
     // All TAGLINE entries in GOLDED.CFG live inside IF 0 — should be empty.
     expect($config['taglines'])->toBeEmpty();
 
     // Parser should still complete cleanly with correct global values.
-    expect($config['username'])->not->toBeNull();
-    expect($config['charset_import'])->not->toBeNull();
+    expect($config['username'])->not()->toBeNull();
+    expect($config['charset_import'])->not()->toBeNull();
 });
 
 // ── Artisan command ──────────────────────────────────────────────────────────
 
-it('writes config/golded.php via artisan command', function () {
+it('writes config/golded.php via artisan command', function (): void {
     $output = base_path('config/golded.php');
 
     $this->artisan('golded:config', ['path' => cfgPath()])
         ->assertSuccessful();
 
     expect(file_exists($output))->toBeTrue();
-
-    // Re-load fresh (opcache may cache old value, so we read raw)
-    $written = eval('?>'.file_get_contents($output));
     $written = require $output;
 
     expect($written['username'])->toBe('Odinn Sorensen');

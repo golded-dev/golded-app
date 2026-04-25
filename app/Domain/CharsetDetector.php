@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain;
 
 class CharsetDetector
@@ -8,7 +10,7 @@ class CharsetDetector
      * Map of FidoNet CHRS charset names → PHP mbstring encoding names.
      * Only the first token of the CHRS value is matched (e.g. "LATIN-1" from "LATIN-1 2").
      */
-    private const MAP = [
+    private const array MAP = [
         // CP850 variants
         'CP850' => 'CP850',
         'IBM850' => 'CP850',

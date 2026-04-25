@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Config\GoldedConfigParser;
@@ -67,22 +69,22 @@ class ImportGoldedConfig extends Command
 
     private function renderArray(array $items): string
     {
-        if (empty($items)) {
+        if ($items === []) {
             return '[]';
         }
 
-        $lines = array_map(fn ($v) => '        '.var_export($v, true).',', $items);
+        $lines = array_map(fn ($v): string => '        '.var_export($v, true).',', $items);
 
         return "[\n".implode("\n", $lines)."\n    ]";
     }
 
     private function renderAreasep(array $items): string
     {
-        if (empty($items)) {
+        if ($items === []) {
             return '[]';
         }
 
-        $lines = array_map(function ($sep) {
+        $lines = array_map(function (array $sep): string {
             $label = var_export($sep['label'], true);
             $type = var_export($sep['area_type'], true);
 
@@ -94,7 +96,7 @@ class ImportGoldedConfig extends Command
 
     private function renderAreas(array $areas): string
     {
-        if (empty($areas)) {
+        if ($areas === []) {
             return '[]';
         }
 

@@ -1,0 +1,17 @@
+includes:
+    - vendor/odinns/coding-style/config/larastan.neon
+    - vendor/odinns/phpstan-pest-this/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+        - bootstrap
+        - config
+        - database
+        - routes
+        - tests
+    pestClosureThisTypeMap:
+        -
+            pathContains: '/tests/'
+            class: Tests\TestCase

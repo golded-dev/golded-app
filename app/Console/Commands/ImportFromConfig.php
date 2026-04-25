@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use App\Import\JamImporter;
@@ -35,7 +37,7 @@ class ImportFromConfig extends Command
             $sourceType = $format === 'opus' ? 'msg' : $format;
 
             $area = Area::firstOrCreate(
-                ['code' => strtoupper($def['echoid'])],
+                ['code' => strtoupper((string) $def['echoid'])],
                 [
                     'name' => $def['description'] ?? $def['echoid'],
                     'echoid' => $def['echoid'],
@@ -71,6 +73,7 @@ class ImportFromConfig extends Command
             'squish' => (new SquishImporter)->import($unixPath, $area),
             'jam' => (new JamImporter)->import($unixPath, $area),
             'msg', 'opus' => (new MsgImporter)->import($unixPath, $area),
+            default => 0,
         };
     }
 
@@ -81,6 +84,7 @@ class ImportFromConfig extends Command
             'squish' => file_exists("{$unixPath}.sqd") || file_exists("{$unixPath}.SQD"),
             'jam' => file_exists("{$unixPath}.jhr") || file_exists("{$unixPath}.JHR"),
             'msg', 'opus' => is_dir($unixPath),
+            default => false,
         };
     }
 

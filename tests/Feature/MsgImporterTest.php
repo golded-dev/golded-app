@@ -21,17 +21,17 @@ function copyRealMsg(string $dir, int $msgno, string $area = 'THE_SAFE'): void
     copy($src, "{$dir}/{$msgno}.msg");
 }
 
-afterEach(function () {
+afterEach(function (): void {
     // Clean up temp dirs
     foreach (glob(sys_get_temp_dir().'/golded_test_*') as $dir) {
-        array_map('unlink', glob("{$dir}/*"));
+        array_map(unlink(...), glob("{$dir}/*"));
         rmdir($dir);
     }
 });
 
 // ── Tracer bullet ────────────────────────────────────────────────────────────
 
-it('imports from_name from a real .msg file', function () {
+it('imports from_name from a real .msg file', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
     $area = Area::factory()->create([]);
@@ -43,7 +43,7 @@ it('imports from_name from a real .msg file', function () {
 
 // ── Header fields ─────────────────────────────────────────────────────────────
 
-it('imports to_name and subject', function () {
+it('imports to_name and subject', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
@@ -55,7 +55,7 @@ it('imports to_name and subject', function () {
         ->and($msg->subject)->toBe('Keep on the good work..');
 });
 
-it('imports body text including kludge lines', function () {
+it('imports body text including kludge lines', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
@@ -67,7 +67,7 @@ it('imports body text including kludge lines', function () {
         ->and($body)->toContain('want');    // real body content still present
 });
 
-it('sets msgno from filename', function () {
+it('sets msgno from filename', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
 
@@ -77,7 +77,7 @@ it('sets msgno from filename', function () {
     expect(Message::first()->msgno)->toBe(1);
 });
 
-it('returns count of imported messages', function () {
+it('returns count of imported messages', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
     copyRealMsg($dir, 2);
@@ -91,7 +91,7 @@ it('returns count of imported messages', function () {
 
 // ── MSGID deduplication ───────────────────────────────────────────────────────
 
-it('populates external_id for all imported MSG messages', function () {
+it('populates external_id for all imported MSG messages', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
     copyRealMsg($dir, 2);
@@ -102,7 +102,7 @@ it('populates external_id for all imported MSG messages', function () {
     expect(Message::whereNull('external_id')->count())->toBe(0);
 });
 
-it('uses the MSGID kludge as external_id when present in MSG file', function () {
+it('uses the MSGID kludge as external_id when present in MSG file', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1); // THE_SAFE/1.MSG has MSGID kludge in body
     $area = Area::factory()->create();
@@ -112,7 +112,7 @@ it('uses the MSGID kludge as external_id when present in MSG file', function () 
     expect(Message::first()->external_id)->not->toStartWith('hash:');
 });
 
-it('re-importing the same MSG files is idempotent', function () {
+it('re-importing the same MSG files is idempotent', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copyRealMsg($dir, 1);
     copyRealMsg($dir, 2);
@@ -128,7 +128,7 @@ it('re-importing the same MSG files is idempotent', function () {
 
 // ── Artisan command ───────────────────────────────────────────────────────────
 
-it('imports all areas via artisan command', function () {
+it('imports all areas via artisan command', function (): void {
     $tmpBase = sys_get_temp_dir().'/golded_cmd_test_'.uniqid();
     mkdir("{$tmpBase}/THE_SAFE", 0755, true);
     mkdir("{$tmpBase}/NETMAIL", 0755, true);
@@ -140,8 +140,8 @@ it('imports all areas via artisan command', function () {
     expect(Message::count())->toBe(2);
 
     // Cleanup
-    array_map('unlink', glob("{$tmpBase}/THE_SAFE/*"));
-    array_map('unlink', glob("{$tmpBase}/NETMAIL/*"));
+    array_map(unlink(...), glob("{$tmpBase}/THE_SAFE/*"));
+    array_map(unlink(...), glob("{$tmpBase}/NETMAIL/*"));
     rmdir("{$tmpBase}/THE_SAFE");
     rmdir("{$tmpBase}/NETMAIL");
     rmdir($tmpBase);

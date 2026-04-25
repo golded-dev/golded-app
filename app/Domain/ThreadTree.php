@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain;
 
 use Illuminate\Support\Collection;
@@ -16,13 +18,14 @@ class ThreadTree
      * Root messages (no parent in the collection) are sorted by msgno and
      * act as thread anchors.
      *
-     * @param  Collection<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
-     * @return Collection<int, object>
+     * @param  iterable<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
      */
-    public function order(Collection $messages): Collection
+    public function order(iterable $messages): Collection
     {
+        $messages = $this->messageCollection($messages);
+
         if ($messages->isEmpty()) {
-            return $messages;
+            return $this->messageCollection([]);
         }
 
         [$children, $parents] = $this->buildLinks($messages);
@@ -30,7 +33,7 @@ class ThreadTree
         $idToMsg = $messages->keyBy('id')->all();
 
         $roots = $messages
-            ->filter(fn ($m) => ! isset($parents[$m->id]))
+            ->filter(fn ($m): bool => ! isset($parents[$m->id]))
             ->sortBy('msgno')
             ->values();
 
@@ -41,7 +44,7 @@ class ThreadTree
             $this->visit($root->id, $children, $idToMsg, $ordered, $visited);
         }
 
-        return collect($ordered);
+        return $this->messageCollection($ordered);
     }
 
     /**
@@ -58,11 +61,13 @@ class ThreadTree
      * Call order() first and pass the result here so the prefixes visually
      * connect between consecutive rows in the display.
      *
-     * @param  Collection<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
+     * @param  iterable<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
      * @return array<int, string>
      */
-    public function build(Collection $messages): array
+    public function build(iterable $messages): array
     {
+        $messages = $this->messageCollection($messages);
+
         [$children, $parents] = $this->buildLinks($messages);
         $replynext = $this->buildReplynext($children);
 
@@ -76,6 +81,14 @@ class ThreadTree
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * @param  iterable<int, object{id: int, msgno: int, reply_to_msgno: ?int}>  $messages
+     */
+    private function messageCollection(iterable $messages): Collection
+    {
+        return new Collection($messages);
+    }
 
     /**
      * Build children map and parents map from reply_to_msgno links.
@@ -176,14 +189,14 @@ class ThreadTree
     {
         if (! isset($parents[$id])) {
             // Root: show ─┐ bend if it has replies, blank otherwise.
-            return ! empty($children[$id])
-                ? mb_str_pad('─┐', 8)
-                : str_repeat(' ', 8);
+            return empty($children[$id])
+                ? str_repeat(' ', 8)
+                : mb_str_pad('─┐', 8);
         }
 
         // Own connector — append ─┐ bend when this message has its own replies.
         $connector = isset($replynext[$id]) ? '├' : '└';
-        $parts = [! empty($children[$id]) ? $connector.'─┐' : $connector.'─'];
+        $parts = [empty($children[$id]) ? $connector.'─' : $connector.'─┐'];
 
         // Walk up the ancestor chain; stop before root (root has no parent)
         $current = $id;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Golded;
 
 class AnsiRenderer
@@ -12,7 +14,7 @@ class AnsiRenderer
      *
      * @var array<string, string>
      */
-    private const CGA_MAP = [
+    private const array CGA_MAP = [
         'cga-black-lgrey' => '30;47',  // black on light grey
         'cga-blue-lgrey' => '34;47',  // blue on light grey
         'cga-green-lgrey' => '32;47',  // green on light grey

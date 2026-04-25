@@ -13,11 +13,11 @@
         "laravel/fortify": "^1.34",
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
-        "golded-dev/laravel-ftn": "*@dev",
-        "golded-dev/laravel-ftn-hudson": "*@dev",
-        "golded-dev/laravel-ftn-jam": "*@dev",
-        "golded-dev/laravel-ftn-msg": "*@dev",
-        "golded-dev/laravel-ftn-squish": "*@dev",
+        "golded-dev/laravel-ftn": "^1.0",
+        "golded-dev/laravel-ftn-hudson": "^1.0",
+        "golded-dev/laravel-ftn-jam": "^1.0",
+        "golded-dev/laravel-ftn-msg": "^1.0",
+        "golded-dev/laravel-ftn-squish": "^1.0",
         "livewire/flux": "^2.12.0",
         "livewire/livewire": "^4.1"
     },
@@ -30,9 +30,13 @@
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9",
         "nunomaduro/pao": "0.x-dev",
+        "odinns/coding-style": "^1.0.1",
+        "odinns/phpstan-pest-this": "^1.0",
         "pestphp/pest": "^4.4",
         "pestphp/pest-plugin-laravel": "^4.1",
-        "phpunit/phpunit": "^12.5"
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^12.5",
+        "rector/rector": "^2.2"
     },
     "autoload": {
         "psr-4": {
@@ -46,43 +50,6 @@
             "Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../laravel-ftn",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
-            "type": "path",
-            "url": "../laravel-ftn-msg",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
-            "type": "path",
-            "url": "../laravel-ftn-jam",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
-            "type": "path",
-            "url": "../laravel-ftn-squish",
-            "options": {
-                "symlink": true
-            }
-        },
-        {
-            "type": "path",
-            "url": "../laravel-ftn-hudson",
-            "options": {
-                "symlink": true
-            }
-        }
-    ],
     "scripts": {
         "setup": [
             "composer install",
@@ -102,6 +69,12 @@
         "lint:check": [
             "pint --parallel --test"
         ],
+        "test:types": [
+            "phpstan analyse"
+        ],
+        "test:refactor": [
+            "rector process --dry-run"
+        ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "@test"
@@ -109,6 +82,8 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
+            "@test:types",
+            "@test:refactor",
             "@php artisan test"
         ],
         "post-autoload-dump": [

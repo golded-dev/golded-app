@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Golded;
 
 use App\Domain\LineClassifier;
@@ -12,9 +14,12 @@ use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * @phpstan-type Segment array{0: string, 1: string}
+ * @phpstan-type AreaDisplayItem array{type: 'area', index: int, area: Area}
+ * @phpstan-type SeparatorDisplayItem array{type: 'sep', label: string}
  */
 class GoldedState
 {
+    /** @var 'areas'|'messages'|'reader'|'editor' */
     public string $screen = 'areas';
 
     public ?int $areaId = null;
@@ -29,19 +34,13 @@ class GoldedState
 
     public bool $showKludges = false;
 
-    public int $cols;
-
-    public int $rows;
-
+    /** @var Collection<int, Area>|null */
     private ?Collection $_areas = null;
 
+    /** @var SupportCollection<int, Message>|null */
     private ?SupportCollection $_messages = null;
 
-    public function __construct(int $cols = 80, int $rows = 25)
-    {
-        $this->cols = $cols;
-        $this->rows = $rows;
-    }
+    public function __construct(public int $cols = 80, public int $rows = 25) {}
 
     public function resize(int $cols, int $rows): void
     {
@@ -49,10 +48,11 @@ class GoldedState
         $this->rows = $rows;
     }
 
+    /** @return Collection<int, Area> */
     public function areas(): Collection
     {
-        if ($this->_areas === null) {
-            $sort = strtoupper(config('golded.arealistsort', 'YUE'));
+        if (! $this->_areas instanceof Collection) {
+            $sort = strtoupper((string) config('golded.arealistsort', 'YUE'));
             $query = Area::query();
 
             $typeOrder = collect(config('golded.areasep', []))->pluck('area_type')->values();
@@ -62,7 +62,7 @@ class GoldedState
                     'T' => $typeOrder->isNotEmpty()
                         ? $query->orderByRaw(
                             'CASE area_type '
-                            .$typeOrder->map(fn ($t, $i) => "WHEN '{$t}' THEN {$i}")->implode(' ')
+                            .$typeOrder->map(fn ($t, $i): string => "WHEN '{$t}' THEN {$i}")->implode(' ')
                             .' ELSE '.$typeOrder->count().' END'
                         )
                         : null,
@@ -82,9 +82,10 @@ class GoldedState
         return $this->_areas;
     }
 
+    /** @return SupportCollection<int, Message> */
     public function messages(): SupportCollection
     {
-        if ($this->_messages === null) {
+        if (! $this->_messages instanceof SupportCollection) {
             $msgs = Message::where('area_id', $this->areaId ?? 0)->orderBy('msgno')->get();
             $this->_messages = (new ThreadTree)->order($msgs);
         }
@@ -203,7 +204,7 @@ class GoldedState
         $this->topOffset = max(0, min($this->topOffset, max(0, $total - $contentRows)));
     }
 
-    /** @return array<int, array{type: string, ...}> */
+    /** @return list<AreaDisplayItem|SeparatorDisplayItem> */
     private function buildDisplayList(): array
     {
         $areasep = collect(config('golded.areasep', []));
@@ -216,12 +217,12 @@ class GoldedState
             if ($areaType !== $lastType && $areaType !== '' && $areasep->isNotEmpty()) {
                 $sepEntry = $areasep->firstWhere('area_type', $areaType);
                 if ($sepEntry) {
-                    $list[] = ['type' => 'sep', 'label' => $sepEntry['label']];
+                    $list[] = ['type' => 'sep', 'label' => (string) $sepEntry['label']];
                 }
                 $lastType = $areaType;
             }
 
-            $list[] = ['type' => 'area', 'index' => $areaIndex, 'area' => $area];
+            $list[] = ['type' => 'area', 'index' => (int) $areaIndex, 'area' => $area];
         }
 
         return $list;
@@ -291,7 +292,7 @@ class GoldedState
     private function nextMessage(): void
     {
         $messages = $this->messages();
-        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $current = $messages->search(fn ($m): bool => $m->id === $this->messageId);
         if ($current !== false && $current < $messages->count() - 1) {
             $this->messageId = $messages->get($current + 1)->id;
             $this->scrollOffset = 0;
@@ -301,7 +302,7 @@ class GoldedState
     private function prevMessage(): void
     {
         $messages = $this->messages();
-        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $current = $messages->search(fn ($m): bool => $m->id === $this->messageId);
         if ($current > 0) {
             $this->messageId = $messages->get($current - 1)->id;
             $this->scrollOffset = 0;
@@ -311,11 +312,11 @@ class GoldedState
     private function nextUnreadMessage(): void
     {
         $messages = $this->messages();
-        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $current = $messages->search(fn ($m): bool => $m->id === $this->messageId);
         if ($current === false) {
             return;
         }
-        $next = $messages->slice($current + 1)->first(fn ($m) => ! $m->is_read);
+        $next = $messages->slice($current + 1)->first(fn ($m): bool => ! $m->is_read);
         if ($next) {
             $this->messageId = $next->id;
             $this->scrollOffset = 0;
@@ -326,11 +327,11 @@ class GoldedState
     private function prevUnreadMessage(): void
     {
         $messages = $this->messages();
-        $current = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $current = $messages->search(fn ($m): bool => $m->id === $this->messageId);
         if ($current === false || $current === 0) {
             return;
         }
-        $prev = $messages->slice(0, $current)->last(fn ($m) => ! $m->is_read);
+        $prev = $messages->slice(0, $current)->last(fn ($m): bool => ! $m->is_read);
         if ($prev) {
             $this->messageId = $prev->id;
             $this->scrollOffset = 0;
@@ -419,7 +420,7 @@ class GoldedState
     private function ln(array $segments, ?int $width = null): array
     {
         $actualWidth = $width ?? $this->cols;
-        $len = array_sum(array_map(fn ($s) => mb_strlen($s[0]), $segments));
+        $len = array_sum(array_map(fn (array $s): int => mb_strlen($s[0]), $segments));
         $result = $segments;
 
         if ($len < $actualWidth) {
@@ -439,7 +440,7 @@ class GoldedState
     {
         $b = 'cga-yellow-lgrey';
         $contentWidth = $this->cols - 2;
-        $len = array_sum(array_map(fn ($s) => mb_strlen($s[0]), $segments));
+        $len = array_sum(array_map(fn (array $s): int => mb_strlen($s[0]), $segments));
 
         $result = [['│', $b]];
         foreach ($segments as $seg) {
@@ -577,7 +578,7 @@ class GoldedState
 
             if ($item['type'] === 'sep') {
                 $label = $item['label'];
-                $dashes = max(0, $contentWidth - 2 - mb_strlen($label));
+                $dashes = max(0, $contentWidth - 2 - mb_strlen((string) $label));
                 $left = intdiv($dashes, 2);
                 $right = $dashes - $left;
                 $content = str_repeat('─', $left).' '.$label.' '.str_repeat('─', max(0, $right - 2));
@@ -591,7 +592,7 @@ class GoldedState
 
                 $num = str_pad((string) ($absIndex + 1), 3, ' ', STR_PAD_LEFT);
                 $ind = $hasUnread ? '>' : ' ';
-                $desc = mb_str_pad(mb_substr($area->name, 0, $descWidth), $descWidth);
+                $desc = mb_str_pad(mb_substr((string) $area->name, 0, $descWidth), $descWidth);
                 $msgs = $area->message_count !== null
                     ? str_pad((string) $area->message_count, 6, ' ', STR_PAD_LEFT)
                     : '     -';
@@ -626,9 +627,9 @@ class GoldedState
         $rows[] = $this->bottom();
 
         $area = $this->areas()->get($this->selectionIndex);
-        $areaLabel = $area?->echoid ?? ($area?->name ?? '');
-        $areaMsgs = $area?->message_count ?? 0;
-        $areaUnread = $area?->unread_count ?? 0;
+        $areaLabel = $area instanceof Area ? ($area->echoid ?? $area->name) : '';
+        $areaMsgs = $area instanceof Area ? ($area->message_count ?? 0) : 0;
+        $areaUnread = $area instanceof Area ? ($area->unread_count ?? 0) : 0;
         $rows[] = $this->status(
             config('golded.version', 'GoldED'),
             "{$areaLabel}: {$areaMsgs} msgs, {$areaUnread} unread, 0 personal",
@@ -645,9 +646,7 @@ class GoldedState
     {
         $contentWidth = $this->cols - 2;
         $subjWidth = max(10, $contentWidth - 48); // 48 = fixed columns
-        $contentRows = $this->rows - 5;             // top + colhdr + sep + bottom + status
-
-        $y = 'cga-yellow-lgrey';
+        $contentRows = $this->rows - 5;
         $b = 'cga-blue-lgrey';
         $n = 'cga-black-lgrey';
         $s = 'cga-white-blue';
@@ -657,7 +656,7 @@ class GoldedState
         $messages = $this->messages();
         $total = $messages->count();
         $area = $this->areaId ? Area::find($this->areaId) : null;
-        $areaName = $area?->name ?? 'Messages';
+        $areaName = $area instanceof Area ? $area->name : 'Messages';
         $unread = $messages->where('is_read', false)->count();
         $summary = $unread > 0 ? "{$total} msgs, {$unread} new" : "{$total} msgs";
 
@@ -690,8 +689,8 @@ class GoldedState
             $thread = $tree[$msg->id] ?? str_repeat(' ', 8);
             $bk = $msg->is_bookmarked ? '►' : ' ';
             $mk = $msg->is_marked ? '■' : ' ';
-            $from = mb_str_pad(mb_substr($msg->from_name, 0, 21), 21);
-            $subj = mb_str_pad(mb_substr($msg->subject, 0, $subjWidth), $subjWidth);
+            $from = mb_str_pad(mb_substr((string) $msg->from_name, 0, 21), 21);
+            $subj = mb_str_pad(mb_substr((string) $msg->subject, 0, $subjWidth), $subjWidth);
             $date = $msg->posted_at
                 ? $msg->posted_at->format('d M y')
                 : str_repeat(' ', 9);
@@ -726,9 +725,7 @@ class GoldedState
     private function readerScreen(): array
     {
         $contentWidth = $this->cols - 2;
-        $bodyRows = $this->rows - 7; // top + 4 header + sep + bottom + status
-
-        $y = 'cga-yellow-lgrey';
+        $bodyRows = $this->rows - 7;
         $dg = 'cga-dgrey-lgrey';
         $b = 'cga-blue-lgrey';
         $n = 'cga-black-lgrey';
@@ -741,27 +738,32 @@ class GoldedState
         $msg = $this->currentMessage();
         $messages = $this->messages();
         $total = $messages->count();
-        $pos = $messages->search(fn ($m) => $m->id === $this->messageId);
+        $pos = $messages->search(fn ($m): bool => $m->id === $this->messageId);
         $msgno = $pos !== false ? $pos + 1 : 1;
         $area = $this->areaId ? Area::find($this->areaId) : null;
-        $areaName = $area?->name ?? '';
-        $echoid = $area?->echoid ?? '';
+        $areaName = $area instanceof Area ? $area->name : '';
+        $echoid = $area instanceof Area ? ($area->echoid ?? '') : '';
 
-        $rows[] = $this->top("[{$msgno}] {$areaName}", $msg?->from_address ?? '', $echoid, false);
+        $fromAddress = $msg instanceof Message ? ($msg->from_address ?? '') : '';
+        $rows[] = $this->top("[{$msgno}] {$areaName}", $fromAddress, $echoid, false);
 
-        $dateStr = $msg?->posted_at ? $msg->posted_at->format('d M y') : '';
+        $dateStr = $msg instanceof Message && $msg->posted_at !== null ? $msg->posted_at->format('d M y') : '';
         $rows[] = $this->row([
             [" Msg: {$msgno} of {$total}", $b],
-            [str_repeat(' ', max(0, $contentWidth - 2 - mb_strlen(" Msg: {$msgno} of {$total}") - mb_strlen($dateStr) - 1)).$dateStr.' ', $b],
+            [str_repeat(' ', max(0, $contentWidth - 2 - mb_strlen(" Msg: {$msgno} of {$total}") - mb_strlen((string) $dateStr) - 1)).$dateStr.' ', $b],
         ]);
 
-        $rows[] = $this->row([[' From: ', $b], [str_pad(mb_substr($msg?->from_name ?? '', 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
-        $rows[] = $this->row([[' To  : ', $b], [str_pad(mb_substr($msg?->to_name ?? '', 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
-        $rows[] = $this->row([[' Subj: ', $b], [str_pad(mb_substr($msg?->subject ?? '', 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
+        $fromName = $msg instanceof Message ? ($msg->from_name ?? '') : '';
+        $toName = $msg instanceof Message ? ($msg->to_name ?? '') : '';
+        $subject = $msg instanceof Message ? ($msg->subject ?? '') : '';
+
+        $rows[] = $this->row([[' From: ', $b], [str_pad(mb_substr($fromName, 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
+        $rows[] = $this->row([[' To  : ', $b], [str_pad(mb_substr($toName, 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
+        $rows[] = $this->row([[' Subj: ', $b], [str_pad(mb_substr($subject, 0, $contentWidth - 8), $contentWidth - 8).' ', $n]]);
 
         $rows[] = $this->sep();
 
-        $rawLines = $msg ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
+        $rawLines = $msg instanceof Message ? explode("\n", str_replace("\r", '', $msg->body_text)) : [];
         $bodyLines = [];
         $classifier = new LineClassifier;
 

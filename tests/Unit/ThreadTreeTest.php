@@ -2,20 +2,22 @@
 
 use App\Domain\ThreadTree;
 
-// Helper: build a fake message object with id, msgno, reply_to_msgno
+/**
+ * @return object{id: int, msgno: int, reply_to_msgno: int|null}
+ */
 function msg(int $id, int $msgno, ?int $replyTo = null): object
 {
     return (object) ['id' => $id, 'msgno' => $msgno, 'reply_to_msgno' => $replyTo];
 }
 
-it('returns blank prefix for a root message with no replies', function () {
+it('returns blank prefix for a root message with no replies', function (): void {
     $messages = collect([msg(1, 1)]);
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toBe('        ');
 });
 
-it('returns blank prefix for multiple root messages with no replies', function () {
+it('returns blank prefix for multiple root messages with no replies', function (): void {
     $messages = collect([msg(1, 1), msg(2, 2)]);
     $tree = (new ThreadTree)->build($messages);
 
@@ -23,14 +25,14 @@ it('returns blank prefix for multiple root messages with no replies', function (
     expect($tree[2])->toBe('        ');
 });
 
-it('shows ─┐ bend on root message that has replies', function () {
+it('shows ─┐ bend on root message that has replies', function (): void {
     $messages = collect([msg(1, 1), msg(2, 2, 1)]);
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toStartWith('─┐');
 });
 
-it('marks last child with └', function () {
+it('marks last child with └', function (): void {
     // 1 ← root
     //   └ 2 (only reply)
     $messages = collect([msg(1, 1), msg(2, 2, 1)]);
@@ -40,7 +42,7 @@ it('marks last child with └', function () {
     expect($tree[2])->toStartWith(' └─');
 });
 
-it('marks non-last sibling with ├ and last with └', function () {
+it('marks non-last sibling with ├ and last with └', function (): void {
     // 1 ← root
     //   ├ 2
     //   └ 3
@@ -51,7 +53,7 @@ it('marks non-last sibling with ├ and last with └', function () {
     expect($tree[3])->toStartWith(' └─');
 });
 
-it('renders continuation │ on ancestor when it has more siblings', function () {
+it('renders continuation │ on ancestor when it has more siblings', function (): void {
     // 1 root
     //   ├ 2 (has sibling 3 below)
     //   │  └ 4 (reply to 2)
@@ -69,7 +71,7 @@ it('renders continuation │ on ancestor when it has more siblings', function ()
     expect($tree[4])->toStartWith(' │ └─');
 });
 
-it('renders spec §10.5 example correctly', function () {
+it('renders spec §10.5 example correctly', function (): void {
     // 1: root
     // 2: reply to 1 (not last — 3,5 follow)
     // 3: reply to 1 (not last — 5 follows)
@@ -93,14 +95,14 @@ it('renders spec §10.5 example correctly', function () {
 
 // ── order() ───────────────────────────────────────────────────────────────────
 
-it('orders root-only messages by msgno', function () {
+it('orders root-only messages by msgno', function (): void {
     $messages = collect([msg(3, 3), msg(1, 1), msg(2, 2)]);
     $ordered = (new ThreadTree)->order($messages);
 
     expect($ordered->pluck('id')->all())->toBe([1, 2, 3]);
 });
 
-it('places replies immediately after their parent in depth-first order', function () {
+it('places replies immediately after their parent in depth-first order', function (): void {
     // 1 root, 2 replies to 1, 3 is a separate root
     $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3)]);
     $ordered = (new ThreadTree)->order($messages);
@@ -108,7 +110,7 @@ it('places replies immediately after their parent in depth-first order', functio
     expect($ordered->pluck('id')->all())->toBe([1, 2, 3]);
 });
 
-it('groups nested replies under their ancestor before moving to next sibling', function () {
+it('groups nested replies under their ancestor before moving to next sibling', function (): void {
     // 1 → 2 → 4 (deep chain), 1 → 3 (sibling of 2)
     $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3, 1), msg(4, 4, 2)]);
     $ordered = (new ThreadTree)->order($messages);
@@ -117,7 +119,7 @@ it('groups nested replies under their ancestor before moving to next sibling', f
     expect($ordered->pluck('id')->all())->toBe([1, 2, 4, 3]);
 });
 
-it('handles the spec §10.5 example in correct thread order', function () {
+it('handles the spec §10.5 example in correct thread order', function (): void {
     // 1: root; 2,3,5: direct replies to 1; 4: reply to 3
     $messages = collect([msg(1, 1), msg(2, 2, 1), msg(3, 3, 1), msg(4, 4, 3), msg(5, 5, 1)]);
     $ordered = (new ThreadTree)->order($messages);
@@ -126,14 +128,14 @@ it('handles the spec §10.5 example in correct thread order', function () {
     expect($ordered->pluck('id')->all())->toBe([1, 2, 3, 4, 5]);
 });
 
-it('ignores reply_to_msgno not present in the collection', function () {
+it('ignores reply_to_msgno not present in the collection', function (): void {
     $messages = collect([msg(1, 1, 99)]);
     $tree = (new ThreadTree)->build($messages);
 
     expect($tree[1])->toBe('        ');
 });
 
-it('truncates deep nesting to exactly 8 chars (max 4 levels)', function () {
+it('truncates deep nesting to exactly 8 chars (max 4 levels)', function (): void {
     // 5 levels deep — prefix would be 10 chars without capping
     $messages = collect([
         msg(1, 1),
@@ -148,7 +150,7 @@ it('truncates deep nesting to exactly 8 chars (max 4 levels)', function () {
     expect(mb_strlen($tree[6]))->toBe(8);
 });
 
-it('pads all prefixes to exactly 8 chars', function () {
+it('pads all prefixes to exactly 8 chars', function (): void {
     $messages = collect([
         msg(1, 1),
         msg(2, 2, 1),

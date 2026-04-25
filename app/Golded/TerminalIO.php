@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Golded;
 
 class TerminalIO
@@ -9,7 +11,7 @@ class TerminalIO
      *
      * @var array<string, string>
      */
-    private const KEY_MAP = [
+    private const array KEY_MAP = [
         "\033[A" => 'ArrowUp',
         "\033[B" => 'ArrowDown',
         "\033[C" => 'ArrowRight',
@@ -86,14 +88,14 @@ class TerminalIO
     {
         $cols = (int) trim((string) shell_exec('tput cols 2>/dev/null'));
 
-        return $cols >= 80 ? $cols : 80;
+        return max($cols, 80);
     }
 
     public function height(): int
     {
         $lines = (int) trim((string) shell_exec('tput lines 2>/dev/null'));
 
-        return $lines >= 25 ? $lines : 25;
+        return max($lines, 25);
     }
 
     /**

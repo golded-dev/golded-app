@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Import;
 
 use App\Models\Area;
@@ -22,7 +24,7 @@ class JamImporter
      */
     public function import(string $basePath, ?Area $area = null): int
     {
-        if ($area === null) {
+        if (! $area instanceof Area) {
             $areaName = strtoupper(basename($basePath));
             $area = Area::firstOrCreate(
                 ['code' => $areaName, 'source_type' => 'jam'],

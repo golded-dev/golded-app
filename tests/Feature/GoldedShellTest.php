@@ -6,12 +6,12 @@ use Livewire\Livewire;
 
 // ── Area list ─────────────────────────────────────────────────────────────────
 
-it('starts with selection at index 0', function () {
+it('starts with selection at index 0', function (): void {
     Livewire::test('pages::golded-shell')
         ->assertSet('selectionIndex', 0);
 });
 
-it('moves selection down on ArrowDown', function () {
+it('moves selection down on ArrowDown', function (): void {
     Area::factory()->count(3)->create();
 
     Livewire::test('pages::golded-shell')
@@ -19,7 +19,7 @@ it('moves selection down on ArrowDown', function () {
         ->assertSet('selectionIndex', 1);
 });
 
-it('does not move selection above 0 on ArrowUp', function () {
+it('does not move selection above 0 on ArrowUp', function (): void {
     Area::factory()->count(3)->create();
 
     Livewire::test('pages::golded-shell')
@@ -27,7 +27,7 @@ it('does not move selection above 0 on ArrowUp', function () {
         ->assertSet('selectionIndex', 0);
 });
 
-it('clamps selection at last item on ArrowDown', function () {
+it('clamps selection at last item on ArrowDown', function (): void {
     Area::factory()->count(2)->create();
 
     Livewire::test('pages::golded-shell')
@@ -37,7 +37,7 @@ it('clamps selection at last item on ArrowDown', function () {
         ->assertSet('selectionIndex', 1);
 });
 
-it('opens area on Enter', function () {
+it('opens area on Enter', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
 
     Livewire::test('pages::golded-shell')
@@ -47,7 +47,7 @@ it('opens area on Enter', function () {
         ->assertSet('selectionIndex', 0);
 });
 
-it('opens area on ArrowRight', function () {
+it('opens area on ArrowRight', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
 
     Livewire::test('pages::golded-shell')
@@ -56,7 +56,7 @@ it('opens area on ArrowRight', function () {
         ->assertSet('areaId', $area->id);
 });
 
-it('opens the area at the current selection index', function () {
+it('opens the area at the current selection index', function (): void {
     // echoid controls E-sort order (both areas same source_type/area_type/unread_count for determinism)
     $shared = ['source_type' => 'jam', 'area_type' => 'Echo', 'unread_count' => 0];
     Area::factory()->create(array_merge($shared, ['code' => 'FIRST', 'echoid' => 'ALPHA']));
@@ -70,7 +70,7 @@ it('opens the area at the current selection index', function () {
 
 // ── Message list ──────────────────────────────────────────────────────────────
 
-it('renders thread tree prefix for replies in message list', function () {
+it('renders thread tree prefix for replies in message list', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'subject' => 'Original', 'reply_to_msgno' => null]);
     Message::factory()->for($area)->create(['msgno' => 2, 'subject' => 'Reply', 'reply_to_msgno' => 1]);
@@ -80,7 +80,7 @@ it('renders thread tree prefix for replies in message list', function () {
         ->assertSee('└'); // reply prefix visible
 });
 
-it('shows bookmark indicator on bookmarked message', function () {
+it('shows bookmark indicator on bookmarked message', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_bookmarked' => true]);
 
@@ -89,7 +89,7 @@ it('shows bookmark indicator on bookmarked message', function () {
         ->assertSee('►');
 });
 
-it('renders message subjects when in the messages screen', function () {
+it('renders message subjects when in the messages screen', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['subject' => 'Help with GoldED config', 'msgno' => 1]);
     Message::factory()->for($area)->create(['subject' => 'Nodelist update available', 'msgno' => 2]);
@@ -100,7 +100,7 @@ it('renders message subjects when in the messages screen', function () {
         ->assertSee('Nodelist update available');
 });
 
-it('navigates up and down in message list', function () {
+it('navigates up and down in message list', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->count(3)->create();
 
@@ -112,7 +112,7 @@ it('navigates up and down in message list', function () {
         ->assertSet('selectionIndex', 0);
 });
 
-it('goes back to areas from message list on ArrowLeft', function () {
+it('goes back to areas from message list on ArrowLeft', function (): void {
     Area::factory()->create();
 
     Livewire::test('pages::golded-shell')
@@ -121,7 +121,7 @@ it('goes back to areas from message list on ArrowLeft', function () {
         ->assertSet('screen', 'areas');
 });
 
-it('goes back to areas from message list on Escape', function () {
+it('goes back to areas from message list on Escape', function (): void {
     Area::factory()->create();
 
     Livewire::test('pages::golded-shell')
@@ -132,7 +132,7 @@ it('goes back to areas from message list on Escape', function () {
 
 // ── Reader ────────────────────────────────────────────────────────────────────
 
-it('opens reader on Enter from message list', function () {
+it('opens reader on Enter from message list', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1]);
 
@@ -143,7 +143,7 @@ it('opens reader on Enter from message list', function () {
         ->assertSet('messageId', $msg->id);
 });
 
-it('renders message subject and body in reader', function () {
+it('renders message subject and body in reader', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -158,7 +158,7 @@ it('renders message subject and body in reader', function () {
         ->assertSee('Always carry a towel.');
 });
 
-it('goes back to messages from reader on Escape', function () {
+it('goes back to messages from reader on Escape', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
@@ -169,7 +169,7 @@ it('goes back to messages from reader on Escape', function () {
         ->assertSet('screen', 'messages');
 });
 
-it('navigates to next message in reader on ArrowRight', function () {
+it('navigates to next message in reader on ArrowRight', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $first = Message::factory()->for($area)->create(['msgno' => 1]);
     $second = Message::factory()->for($area)->create(['msgno' => 2]);
@@ -181,7 +181,7 @@ it('navigates to next message in reader on ArrowRight', function () {
         ->assertSet('messageId', $second->id);
 });
 
-it('navigates to previous message in reader on ArrowLeft', function () {
+it('navigates to previous message in reader on ArrowLeft', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $first = Message::factory()->for($area)->create(['msgno' => 1]);
     $second = Message::factory()->for($area)->create(['msgno' => 2]);
@@ -194,7 +194,7 @@ it('navigates to previous message in reader on ArrowLeft', function () {
         ->assertSet('messageId', $first->id);
 });
 
-it('scrolls down in reader on ArrowDown', function () {
+it('scrolls down in reader on ArrowDown', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
@@ -205,7 +205,7 @@ it('scrolls down in reader on ArrowDown', function () {
         ->assertSet('scrollOffset', 1);
 });
 
-it('does not scroll above 0 in reader', function () {
+it('does not scroll above 0 in reader', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
@@ -218,7 +218,7 @@ it('does not scroll above 0 in reader', function () {
 
 // ── Unread tracking ───────────────────────────────────────────────────────────
 
-it('marks a message as read when opened in reader', function () {
+it('marks a message as read when opened in reader', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
@@ -229,7 +229,7 @@ it('marks a message as read when opened in reader', function () {
     expect($msg->fresh()->is_read)->toBeTrue();
 });
 
-it('decrements area unread_count when a message is marked read', function () {
+it('decrements area unread_count when a message is marked read', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 2]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
@@ -240,7 +240,7 @@ it('decrements area unread_count when a message is marked read', function () {
     expect($area->fresh()->unread_count)->toBe(1);
 });
 
-it('does not decrement area unread_count when opening an already-read message', function () {
+it('does not decrement area unread_count when opening an already-read message', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 0]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
 
@@ -251,7 +251,7 @@ it('does not decrement area unread_count when opening an already-read message', 
     expect($area->fresh()->unread_count)->toBe(0);
 });
 
-it('sorts areas with unread messages above areas without', function () {
+it('sorts areas with unread messages above areas without', function (): void {
     Area::factory()->create(['sort_order' => 1, 'echoid' => 'ALPHA', 'unread_count' => 0]);
     Area::factory()->create(['sort_order' => 2, 'echoid' => 'BETA', 'unread_count' => 5]);
 
@@ -262,7 +262,7 @@ it('sorts areas with unread messages above areas without', function () {
     expect($areas->last()->echoid)->toBe('ALPHA');
 });
 
-it('renders area unread colour for areas with unread messages', function () {
+it('renders area unread colour for areas with unread messages', function (): void {
     // Second area has higher unread count so it sorts first (selected), leaving Busy Echo
     // at index 1 (not selected) — where the unread colour cga-blue-lgrey is applied.
     Area::factory()->create(['name' => 'Busy Echo', 'unread_count' => 3, 'message_count' => 10]);
@@ -275,7 +275,7 @@ it('renders area unread colour for areas with unread messages', function () {
 
 // ── @J toggle + next/prev unread ─────────────────────────────────────────────
 
-it('toggles a read message back to unread with Alt+j', function () {
+it('toggles a read message back to unread with Alt+j', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 0]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
 
@@ -288,7 +288,7 @@ it('toggles a read message back to unread with Alt+j', function () {
     expect($area->fresh()->unread_count)->toBe(1);
 });
 
-it('toggles an unread message to read with Alt+j', function () {
+it('toggles an unread message to read with Alt+j', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
@@ -300,7 +300,7 @@ it('toggles an unread message to read with Alt+j', function () {
     expect($msg->fresh()->is_read)->toBeFalse();
 });
 
-it('jumps to next unread message with Alt+ArrowRight', function () {
+it('jumps to next unread message with Alt+ArrowRight', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 1]);
     $first = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
     $second = Message::factory()->for($area)->create(['msgno' => 2, 'is_read' => false]);
@@ -312,7 +312,7 @@ it('jumps to next unread message with Alt+ArrowRight', function () {
         ->assertSet('messageId', $second->id);
 });
 
-it('marks message as read when jumping to it via Alt+ArrowRight', function () {
+it('marks message as read when jumping to it via Alt+ArrowRight', function (): void {
     $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 2]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
     $second = Message::factory()->for($area)->create(['msgno' => 2, 'is_read' => false]);
@@ -325,7 +325,7 @@ it('marks message as read when jumping to it via Alt+ArrowRight', function () {
     expect($second->fresh()->is_read)->toBeTrue();
 });
 
-it('renders area names from the database', function () {
+it('renders area names from the database', function (): void {
     Area::factory()->create(['name' => 'Galactic Transmissions', 'sort_order' => 1]);
     Area::factory()->create(['name' => 'Interplanetary Gossip', 'sort_order' => 2]);
 
@@ -336,7 +336,7 @@ it('renders area names from the database', function () {
 
 // ── PgUp / PgDn / Home / End ──────────────────────────────────────────────────
 
-it('jumps selection forward 20 on PageDown in area list', function () {
+it('jumps selection forward 20 on PageDown in area list', function (): void {
     Area::factory()->count(25)->create();
 
     Livewire::test('pages::golded-shell')
@@ -344,7 +344,7 @@ it('jumps selection forward 20 on PageDown in area list', function () {
         ->assertSet('selectionIndex', 20);
 });
 
-it('clamps PageDown at last area', function () {
+it('clamps PageDown at last area', function (): void {
     Area::factory()->count(5)->create();
 
     Livewire::test('pages::golded-shell')
@@ -352,7 +352,7 @@ it('clamps PageDown at last area', function () {
         ->assertSet('selectionIndex', 4);
 });
 
-it('jumps selection to 0 on Home in area list', function () {
+it('jumps selection to 0 on Home in area list', function (): void {
     Area::factory()->count(5)->create();
 
     Livewire::test('pages::golded-shell')
@@ -362,7 +362,7 @@ it('jumps selection to 0 on Home in area list', function () {
         ->assertSet('selectionIndex', 0);
 });
 
-it('jumps selection to last on End in area list', function () {
+it('jumps selection to last on End in area list', function (): void {
     Area::factory()->count(5)->create();
 
     Livewire::test('pages::golded-shell')
@@ -370,9 +370,9 @@ it('jumps selection to last on End in area list', function () {
         ->assertSet('selectionIndex', 4);
 });
 
-it('jumps selection forward 20 on PageDown in message list', function () {
+it('jumps selection forward 20 on PageDown in message list', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
-    Message::factory()->for($area)->count(25)->sequence(fn ($s) => ['msgno' => $s->index + 1])->create();
+    Message::factory()->for($area)->count(25)->sequence(fn ($s): array => ['msgno' => $s->index + 1])->create();
 
     Livewire::test('pages::golded-shell')
         ->call('handleKey', 'Enter') // open area
@@ -380,7 +380,7 @@ it('jumps selection forward 20 on PageDown in message list', function () {
         ->assertSet('selectionIndex', 20);
 });
 
-it('scrolls reader body forward 18 lines on PageDown', function () {
+it('scrolls reader body forward 18 lines on PageDown', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -394,7 +394,7 @@ it('scrolls reader body forward 18 lines on PageDown', function () {
         ->assertSet('scrollOffset', 18);
 });
 
-it('scrolls reader body back 18 lines on PageUp', function () {
+it('scrolls reader body back 18 lines on PageUp', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -410,7 +410,7 @@ it('scrolls reader body back 18 lines on PageUp', function () {
         ->assertSet('scrollOffset', 18);
 });
 
-it('jumps reader to top on Home', function () {
+it('jumps reader to top on Home', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -427,7 +427,7 @@ it('jumps reader to top on Home', function () {
 
 // ── Reply navigation ──────────────────────────────────────────────────────────
 
-it('navigates to parent message with -', function () {
+it('navigates to parent message with -', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $parent = Message::factory()->for($area)->create(['msgno' => 1]);
     $reply = Message::factory()->for($area)->create([
@@ -443,7 +443,7 @@ it('navigates to parent message with -', function () {
         ->assertSet('messageId', $parent->id);
 });
 
-it('does nothing on - when message has no parent', function () {
+it('does nothing on - when message has no parent', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'reply_to_msgno' => null]);
 
@@ -454,7 +454,7 @@ it('does nothing on - when message has no parent', function () {
         ->assertSet('messageId', $msg->id);
 });
 
-it('navigates to first reply with +', function () {
+it('navigates to first reply with +', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $parent = Message::factory()->for($area)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
     $reply = Message::factory()->for($area)->create(['msgno' => 2, 'reply_to_msgno' => 1]);
@@ -466,7 +466,7 @@ it('navigates to first reply with +', function () {
         ->assertSet('messageId', $reply->id);
 });
 
-it('navigates to next sibling with *', function () {
+it('navigates to next sibling with *', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     $parent = Message::factory()->for($area)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
     $first = Message::factory()->for($area)->create(['msgno' => 2, 'reply_to_msgno' => 1, 'replynext_msgno' => 3]);
@@ -482,7 +482,7 @@ it('navigates to next sibling with *', function () {
 
 // ── Quote colouring ───────────────────────────────────────────────────────────
 
-it('applies quote CSS class to quoted lines in reader', function () {
+it('applies quote CSS class to quoted lines in reader', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -495,7 +495,7 @@ it('applies quote CSS class to quoted lines in reader', function () {
         ->assertSee('cga-blue-lgrey'); // Quote1 colour class
 });
 
-it('hides kludge lines in reader by default', function () {
+it('hides kludge lines in reader by default', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
@@ -508,7 +508,7 @@ it('hides kludge lines in reader by default', function () {
         ->assertDontSee('cga-dgrey-lgrey'); // kludge colour not present
 });
 
-it('shows kludge lines after pressing K in reader', function () {
+it('shows kludge lines after pressing K in reader', function (): void {
     $area = Area::factory()->create(['sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,

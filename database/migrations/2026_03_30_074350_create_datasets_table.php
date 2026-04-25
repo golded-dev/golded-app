@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('datasets', function (Blueprint $table) {
+        Schema::create('datasets', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('source_type'); // msg, jam, squish, hudson, goldbase

@@ -14,7 +14,7 @@ function hudsonTestBase(): string
 
 // ── Tracer bullet ─────────────────────────────────────────────────────────────
 
-it('imports from_name from a real Hudson message', function () {
+it('imports from_name from a real Hudson message', function (): void {
 
     (new HudsonImporter)->import(hudsonTestBase());
 
@@ -23,41 +23,41 @@ it('imports from_name from a real Hudson message', function () {
 
 // ── Header fields ─────────────────────────────────────────────────────────────
 
-it('imports to_name and subject', function () {
+it('imports to_name and subject', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::first()->to_name)->not->toBeEmpty();
     expect(Message::where('subject', '!=', '')->count())->toBeGreaterThan(0);
 });
 
-it('imports body text including kludge lines', function () {
+it('imports body text including kludge lines', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
     $body = Message::first()->body_text;
     expect($body)->toContain("\x01");
 });
 
-it('imports posted_at as a valid date', function () {
+it('imports posted_at as a valid date', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::first()->posted_at)->not->toBeNull();
 });
 
-it('stores reply links', function () {
+it('stores reply links', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
     expect(Message::count())->toBeGreaterThan(0);
     expect(Message::whereNotNull('reply_to_msgno')->count())->toBeGreaterThanOrEqual(0);
 });
 
-it('returns count of imported messages', function () {
+it('returns count of imported messages', function (): void {
     $count = (new HudsonImporter)->import(hudsonTestBase());
 
     expect($count)->toBeGreaterThan(0)
         ->and($count)->toBe(Message::count());
 });
 
-it('creates separate areas for each board', function () {
+it('creates separate areas for each board', function (): void {
     (new HudsonImporter)->import(hudsonTestBase());
 
     // Hudson archive has 2 boards (150 and 151)
@@ -66,7 +66,7 @@ it('creates separate areas for each board', function () {
 
 // ── Artisan command ───────────────────────────────────────────────────────────
 
-it('imports a Hudson area via artisan command', function () {
+it('imports a Hudson area via artisan command', function (): void {
     $path = hudsonTestBase();
 
     $this->artisan("golded:import hudson {$path}")->assertExitCode(0);

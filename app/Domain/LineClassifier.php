@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain;
 
 enum LineType
@@ -48,7 +50,7 @@ class LineClassifier
                 $i++;
             }
 
-            if ($i < $len && ($line[$i] === '>' || $line[$i] === '|' || $line[$i] === ':')) {
+            if ($i < $len && (in_array($line[$i], ['>', '|', ':'], true))) {
                 $depth++;
                 $i++;
             } else {
