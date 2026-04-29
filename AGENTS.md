@@ -6,8 +6,8 @@ GoldED 7 is a Laravel app for reading imported FTN message bases in the browser 
 
 - This repo is the public app, not a private archive dump.
 - Do not commit real message bases, local agent folders, editor config, credentials, or private machine paths.
-- Sending mail over FidoNet is out of scope for `7.0.0`.
-- Supported databases are SQLite and MySQL. Do not claim PostgreSQL support unless it is tested.
+- Sending mail over FidoNet is still out of scope.
+- Supported databases are SQLite, MySQL, and PostgreSQL. Keep all three tested when touching schema or query behavior.
 
 ## Stack
 
@@ -27,7 +27,7 @@ Use Laravel Boost docs before Laravel ecosystem code changes.
 - Keep changes tight.
 - Prefer deleting over inventing framework furniture.
 - Use descriptive names.
-- Keep migrations portable across SQLite and MySQL.
+- Keep migrations portable across SQLite, MySQL, and PostgreSQL.
 - Use named routes and Laravel conventions.
 - Add or update tests when behavior changes.
 

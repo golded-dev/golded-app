@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "00db8308e66e72ebe96847eaa89cc88c",
+    "content-hash": "d6aad9792287512bf7244f83d8d58d58",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -740,16 +740,16 @@
         },
         {
             "name": "golded-dev/laravel-ftn-database",
-            "version": "1.0.0",
+            "version": "1.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/golded-dev/laravel-ftn-database.git",
-                "reference": "f63669063c97af69d53239e552ba01bc04da9064"
+                "reference": "12e4a155b10d12121710f3e9ede63c4ea8ed6107"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/golded-dev/laravel-ftn-database/zipball/f63669063c97af69d53239e552ba01bc04da9064",
-                "reference": "f63669063c97af69d53239e552ba01bc04da9064",
+                "url": "https://api.github.com/repos/golded-dev/laravel-ftn-database/zipball/12e4a155b10d12121710f3e9ede63c4ea8ed6107",
+                "reference": "12e4a155b10d12121710f3e9ede63c4ea8ed6107",
                 "shasum": ""
             },
             "require": {
@@ -802,7 +802,7 @@
                 "issues": "https://github.com/golded-dev/laravel-ftn-database/issues",
                 "source": "https://github.com/golded-dev/laravel-ftn-database"
             },
-            "time": "2026-04-29T12:56:58+00:00"
+            "time": "2026-04-29T19:04:46+00:00"
         },
         {
             "name": "golded-dev/laravel-ftn-hudson",

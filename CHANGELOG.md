@@ -1,5 +1,19 @@
 # Changelog
 
+## 7.2.0 - 2026-04-29
+
+PostgreSQL support.
+
+### Added
+
+- Added PostgreSQL to the supported database contract.
+- Added PostgreSQL to CI alongside SQLite and MySQL.
+- Added a local PostgreSQL smoke check for fresh migrations, `.MSG` import, and the Pest suite.
+
+### Changed
+
+- Updated `golded-dev/laravel-ftn-database` to `1.1.0`.
+
 ## 7.1.0 - 2026-04-29
 
 FTN database extraction and import hardening.

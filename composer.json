@@ -23,7 +23,7 @@
     },
     "require": {
         "php": "^8.4",
-        "golded-dev/laravel-ftn-database": "^1.0",
+        "golded-dev/laravel-ftn-database": "^1.1",
         "golded-dev/laravel-ftn": "^1.2",
         "golded-dev/laravel-ftn-hudson": "^1.1",
         "golded-dev/laravel-ftn-jam": "^1.1",

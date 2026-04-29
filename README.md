@@ -94,8 +94,17 @@ Supported databases:
 
 - SQLite for local setup and tests
 - MySQL for local or production use
+- PostgreSQL for local or production use
 
-PostgreSQL is not claimed here. It may work later. Today it is not part of the contract.
+Local PostgreSQL smoke check:
+
+```bash
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=golded_app_postgres_probe DB_USERNAME=postgres DB_PASSWORD= php artisan migrate:fresh
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=golded_app_postgres_probe DB_USERNAME=postgres DB_PASSWORD= php artisan golded:import msg samples/msg --fresh
+DB_CONNECTION=pgsql DB_HOST=127.0.0.1 DB_PORT=5432 DB_DATABASE=golded_app_postgres_probe DB_USERNAME=postgres DB_PASSWORD= php artisan test --compact
+```
+
+The checked-in `.env.testing` keeps MySQL as the default. Use the env-prefixed command above when you want the local Pest suite to hit PostgreSQL.
 
 ## Development
 

@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        database: [sqlite, mysql]
+        database: [sqlite, mysql, pgsql]
 
     services:
       mysql:
@@ -28,6 +28,19 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: golded_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d golded_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
@@ -39,7 +52,7 @@ jobs:
           php-version: '8.4'
           tools: composer:v2
           coverage: none
-          extensions: pdo_sqlite, pdo_mysql
+          extensions: pdo_sqlite, pdo_mysql, pdo_pgsql
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -66,21 +79,37 @@ jobs:
         if: matrix.database == 'sqlite'
         run: |
           touch database/database.sqlite
+          {
+            echo "DB_CONNECTION=sqlite"
+            echo "DB_DATABASE=database/database.sqlite"
+          } >> "$GITHUB_ENV"
           php artisan config:clear
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
 
       - name: Configure MySQL
         if: matrix.database == 'mysql'
-        run: php artisan config:clear
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: golded_test
-          DB_USERNAME: root
-          DB_PASSWORD: password
+        run: |
+          {
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=golded_test"
+            echo "DB_USERNAME=root"
+            echo "DB_PASSWORD=password"
+          } >> "$GITHUB_ENV"
+          php artisan config:clear
+
+      - name: Configure PostgreSQL
+        if: matrix.database == 'pgsql'
+        run: |
+          {
+            echo "DB_CONNECTION=pgsql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=5432"
+            echo "DB_DATABASE=golded_test"
+            echo "DB_USERNAME=postgres"
+            echo "DB_PASSWORD=password"
+          } >> "$GITHUB_ENV"
+          php artisan config:clear
 
       - name: Build Assets
         run: npm run build
@@ -96,10 +125,3 @@ jobs:
 
       - name: Pest
         run: php artisan test --compact
-        env:
-          DB_CONNECTION: ${{ matrix.database }}
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: ${{ matrix.database == 'sqlite' && 'database/database.sqlite' || 'golded_test' }}
-          DB_USERNAME: root
-          DB_PASSWORD: password
