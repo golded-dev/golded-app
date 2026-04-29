@@ -68,7 +68,7 @@ it('clamps selection at last item on ArrowDown', function (): void {
 });
 
 it('opens area on Enter', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
 
     $state = new GoldedState;
     $state->handleKey('Enter');
@@ -79,7 +79,7 @@ it('opens area on Enter', function (): void {
 });
 
 it('opens area on ArrowRight', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
 
     $state = new GoldedState;
     $state->handleKey('ArrowRight');
@@ -103,7 +103,7 @@ it('opens the area at the current selection index', function (): void {
 // ── Message list ──────────────────────────────────────────────────────────────
 
 it('renders thread tree prefix for replies in message list', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'subject' => 'Original', 'reply_to_msgno' => null]);
     Message::factory()->for($area)->create(['msgno' => 2, 'subject' => 'Reply', 'reply_to_msgno' => 1]);
 
@@ -114,7 +114,7 @@ it('renders thread tree prefix for replies in message list', function (): void {
 });
 
 it('shows bookmark indicator on bookmarked message', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_bookmarked' => true]);
 
     $state = new GoldedState;
@@ -124,7 +124,7 @@ it('shows bookmark indicator on bookmarked message', function (): void {
 });
 
 it('renders message subjects when in the messages screen', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['subject' => 'Help with GoldED config', 'msgno' => 1]);
     Message::factory()->for($area)->create(['subject' => 'Nodelist update available', 'msgno' => 2]);
 
@@ -137,7 +137,7 @@ it('renders message subjects when in the messages screen', function (): void {
 });
 
 it('navigates up and down in message list', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->count(3)->create();
 
     $state = new GoldedState;
@@ -174,7 +174,7 @@ it('goes back to areas from message list on Escape', function (): void {
 // ── Reader ────────────────────────────────────────────────────────────────────
 
 it('opens reader on Enter from message list', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1]);
 
     $state = new GoldedState;
@@ -186,7 +186,7 @@ it('opens reader on Enter from message list', function (): void {
 });
 
 it('renders message subject and body in reader', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'subject' => 'Re: Pan Galactic Gargle Blaster',
@@ -203,7 +203,7 @@ it('renders message subject and body in reader', function (): void {
 });
 
 it('goes back to messages from reader on Escape', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
     $state = new GoldedState;
@@ -215,7 +215,7 @@ it('goes back to messages from reader on Escape', function (): void {
 });
 
 it('navigates to next message in reader on ArrowRight', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
     $second = Message::factory()->for($area)->create(['msgno' => 2]);
 
@@ -228,7 +228,7 @@ it('navigates to next message in reader on ArrowRight', function (): void {
 });
 
 it('navigates to previous message in reader on ArrowLeft', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     $first = Message::factory()->for($area)->create(['msgno' => 1]);
     Message::factory()->for($area)->create(['msgno' => 2]);
 
@@ -242,7 +242,7 @@ it('navigates to previous message in reader on ArrowLeft', function (): void {
 });
 
 it('scrolls down in reader on ArrowDown', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
     $state = new GoldedState;
@@ -254,7 +254,7 @@ it('scrolls down in reader on ArrowDown', function (): void {
 });
 
 it('does not scroll above 0 in reader', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1]);
 
     $state = new GoldedState;
@@ -268,7 +268,7 @@ it('does not scroll above 0 in reader', function (): void {
 // ── Unread tracking ───────────────────────────────────────────────────────────
 
 it('marks a message as read when opened in reader', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
     $state = new GoldedState;
@@ -279,7 +279,7 @@ it('marks a message as read when opened in reader', function (): void {
 });
 
 it('decrements area unread_count when a message is marked read', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 2]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 2]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
     $state = new GoldedState;
@@ -290,7 +290,7 @@ it('decrements area unread_count when a message is marked read', function (): vo
 });
 
 it('does not decrement area unread_count when opening an already-read message', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 0]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 0]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
 
     $state = new GoldedState;
@@ -301,8 +301,8 @@ it('does not decrement area unread_count when opening an already-read message', 
 });
 
 it('sorts areas with unread messages above areas without', function (): void {
-    Area::factory()->create(['sort_order' => 1, 'echoid' => 'ALPHA', 'unread_count' => 0]);
-    Area::factory()->create(['sort_order' => 2, 'echoid' => 'BETA', 'unread_count' => 5]);
+    Area::factory()->create(['source_sort_order' => 1, 'echoid' => 'ALPHA', 'unread_count' => 0]);
+    Area::factory()->create(['source_sort_order' => 2, 'echoid' => 'BETA', 'unread_count' => 5]);
 
     $state = new GoldedState;
     $areas = $state->areas();
@@ -324,7 +324,7 @@ it('renders area unread colour for areas with unread messages', function (): voi
 // ── @J toggle + next/prev unread ─────────────────────────────────────────────
 
 it('toggles a read message back to unread with Alt+j', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 0]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 0]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
 
     $state = new GoldedState;
@@ -337,7 +337,7 @@ it('toggles a read message back to unread with Alt+j', function (): void {
 });
 
 it('toggles an unread message to read with Alt+j', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => false]);
 
     $state = new GoldedState;
@@ -349,7 +349,7 @@ it('toggles an unread message to read with Alt+j', function (): void {
 });
 
 it('jumps to next unread message with Alt+ArrowRight', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
     $second = Message::factory()->for($area)->create(['msgno' => 2, 'is_read' => false]);
 
@@ -362,7 +362,7 @@ it('jumps to next unread message with Alt+ArrowRight', function (): void {
 });
 
 it('marks message as read when jumping to it via Alt+ArrowRight', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1, 'unread_count' => 2]);
+    $area = Area::factory()->create(['source_sort_order' => 1, 'unread_count' => 2]);
     Message::factory()->for($area)->create(['msgno' => 1, 'is_read' => true]);
     $second = Message::factory()->for($area)->create(['msgno' => 2, 'is_read' => false]);
 
@@ -375,8 +375,8 @@ it('marks message as read when jumping to it via Alt+ArrowRight', function (): v
 });
 
 it('renders area names from the database', function (): void {
-    Area::factory()->create(['name' => 'Galactic Transmissions', 'sort_order' => 1]);
-    Area::factory()->create(['name' => 'Interplanetary Gossip', 'sort_order' => 2]);
+    Area::factory()->create(['name' => 'Galactic Transmissions', 'source_sort_order' => 1]);
+    Area::factory()->create(['name' => 'Interplanetary Gossip', 'source_sort_order' => 2]);
 
     $state = new GoldedState;
 
@@ -426,7 +426,7 @@ it('jumps selection to last on End in area list', function (): void {
 });
 
 it('jumps selection forward 20 on PageDown in message list', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->count(25)->sequence(fn ($s): array => ['msgno' => $s->index + 1])->create();
 
     $state = new GoldedState;
@@ -437,7 +437,7 @@ it('jumps selection forward 20 on PageDown in message list', function (): void {
 });
 
 it('scrolls reader body forward 18 lines on PageDown', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => implode("\n", array_fill(0, 40, 'line')),
@@ -452,7 +452,7 @@ it('scrolls reader body forward 18 lines on PageDown', function (): void {
 });
 
 it('scrolls reader body back 18 lines on PageUp', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => implode("\n", array_fill(0, 40, 'line')),
@@ -469,7 +469,7 @@ it('scrolls reader body back 18 lines on PageUp', function (): void {
 });
 
 it('jumps reader to top on Home', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => implode("\n", array_fill(0, 40, 'line')),
@@ -487,7 +487,7 @@ it('jumps reader to top on Home', function (): void {
 // ── Reply navigation ──────────────────────────────────────────────────────────
 
 it('navigates to parent message with -', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     $parent = Message::factory()->for($area)->create(['msgno' => 1]);
     Message::factory()->for($area)->create(['msgno' => 2, 'reply_to_msgno' => 1]);
 
@@ -501,7 +501,7 @@ it('navigates to parent message with -', function (): void {
 });
 
 it('does nothing on - when message has no parent', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     $msg = Message::factory()->for($area)->create(['msgno' => 1, 'reply_to_msgno' => null]);
 
     $state = new GoldedState;
@@ -513,7 +513,7 @@ it('does nothing on - when message has no parent', function (): void {
 });
 
 it('navigates to first reply with +', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
     $reply = Message::factory()->for($area)->create(['msgno' => 2, 'reply_to_msgno' => 1]);
 
@@ -526,7 +526,7 @@ it('navigates to first reply with +', function (): void {
 });
 
 it('navigates to next sibling with *', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create(['msgno' => 1, 'reply1st_msgno' => 2]);
     Message::factory()->for($area)->create(['msgno' => 2, 'reply_to_msgno' => 1, 'replynext_msgno' => 3]);
     $second = Message::factory()->for($area)->create(['msgno' => 3, 'reply_to_msgno' => 1]);
@@ -543,7 +543,7 @@ it('navigates to next sibling with *', function (): void {
 // ── Quote colouring ───────────────────────────────────────────────────────────
 
 it('applies quote CSS class to quoted lines in reader', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => "> This is a quote\nAnd this is normal text",
@@ -557,7 +557,7 @@ it('applies quote CSS class to quoted lines in reader', function (): void {
 });
 
 it('hides kludge lines in reader by default', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => "\x01MSGID: 1:2/3 deadbeef\nHello world",
@@ -571,7 +571,7 @@ it('hides kludge lines in reader by default', function (): void {
 });
 
 it('shows kludge lines after pressing k in reader', function (): void {
-    $area = Area::factory()->create(['sort_order' => 1]);
+    $area = Area::factory()->create(['source_sort_order' => 1]);
     Message::factory()->for($area)->create([
         'msgno' => 1,
         'body_text' => "\x01MSGID: 1:2/3 deadbeef\nHello world",

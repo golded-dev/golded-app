@@ -18,6 +18,9 @@ class MessageFactory extends Factory
         return [
             'area_id' => Area::factory(),
             'msgno' => fake()->unique()->numberBetween(1, 9999),
+            'source_type' => 'test',
+            'source_uid' => fake()->unique()->uuid(),
+            'external_id' => null,
             'subject' => fake()->sentence(6),
             'from_name' => fake()->name(),
             'from_address' => fake()->numerify('#:###/##'),

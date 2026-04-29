@@ -114,17 +114,39 @@ it('uses the MSGID kludge as external_id when present in MSG file', function ():
     expect(Message::first()->external_id)->not->toStartWith('hash:');
 });
 
+it('stores MSG source identity and provenance', function (): void {
+    ['dir' => $dir] = makeMsgArea();
+    copySampleMsg($dir);
+    $area = Area::factory()->create(['source_type' => 'msg']);
+
+    (new MsgImporter)->import($dir, $area);
+
+    $message = Message::first();
+
+    expect($message->source_type)->toBe('msg')
+        ->and($message->source_uid)->toBe('msg:file:1.msg')
+        ->and($message->source_locator)->toEndWith('/1.msg')
+        ->and($message->control_lines_json)->toHaveKey('msgid')
+        ->and($message->provenance_json)->toMatchArray([
+            'source_type' => 'msg',
+            'source_id' => '1',
+        ]);
+});
+
 it('re-importing the same MSG files is idempotent', function (): void {
     ['dir' => $dir] = makeMsgArea();
     copySampleMsg($dir);
     $area = Area::factory()->create();
 
-    (new MsgImporter)->import($dir, $area);
+    $firstImportCount = (new MsgImporter)->import($dir, $area);
     $count = Message::count();
 
-    (new MsgImporter)->import($dir, $area);
+    $secondImportCount = (new MsgImporter)->import($dir, $area);
 
-    expect(Message::count())->toBe($count);
+    expect($firstImportCount)->toBe(1)
+        ->and($secondImportCount)->toBe(0)
+        ->and(Message::count())->toBe($count)
+        ->and($area->fresh()->message_count)->toBe($count);
 });
 
 // ── Artisan command ───────────────────────────────────────────────────────────

@@ -16,38 +16,28 @@ class MsgImporter
 
     public function __construct(
         private readonly MsgReader $reader = new MsgReader,
+        private readonly MessageImportRecordMapper $mapper = new MessageImportRecordMapper,
     ) {}
 
     /** Import all .msg files from $path into the given Area. Returns count imported. */
     public function import(string $path, Area $area): int
     {
         $this->applyAreaDefMeta($area, $path);
-        $count = 0;
+        $inserted = 0;
 
         foreach ($this->reader->read($path, new ReaderOptions($this->areaFallbackCharset($area->code))) as $message) {
-            $this->persist($message, $area);
-            $count++;
+            $inserted += $this->persist($message, $area);
         }
 
-        $area->update(['message_count' => $count]);
+        $area->update(['message_count' => Message::where('area_id', $area->id)->count()]);
 
-        return $count;
+        return $inserted;
     }
 
-    private function persist(ParsedMessage $message, Area $area): void
+    private function persist(ParsedMessage $message, Area $area): int
     {
-        Message::firstOrCreate(
-            ['external_id' => $message->externalId],
-            [
-                'area_id' => $area->id,
-                'msgno' => $message->msgno,
-                'subject' => $message->subject,
-                'from_name' => $message->fromName,
-                'to_name' => $message->toName,
-                'body_text' => $message->bodyText,
-                'attributes_raw' => $message->attributesRaw,
-                'posted_at' => $message->postedAt,
-            ],
-        );
+        return Message::insertOrIgnore([
+            $this->mapper->map($message, $area, 'msg'),
+        ]);
     }
 }

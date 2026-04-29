@@ -72,6 +72,21 @@ it('uses the JAM MSGID subfield as external_id when present', function (): void 
     expect(Message::where('external_id', 'like', 'hash:%')->count())->toBe(0);
 });
 
+it('stores JAM source identity and provenance', function (): void {
+    (new JamImporter)->import(jamTestBase());
+
+    $message = Message::first();
+
+    expect($message->source_type)->toBe('jam')
+        ->and($message->source_uid)->toBe("jam:offset:{$message->source_offset}")
+        ->and($message->source_offset)->toBeInt()
+        ->and($message->source_locator)->toEndWith('/jtest1.jhr')
+        ->and($message->control_lines_json)->toHaveKey('msgid')
+        ->and($message->provenance_json)->toMatchArray([
+            'source_type' => 'jam',
+        ]);
+});
+
 it('message_count reflects total messages in area after re-import', function (): void {
     (new JamImporter)->import(jamTestBase());
     $area = Area::first();

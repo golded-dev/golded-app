@@ -58,7 +58,7 @@ class ImportMessages extends Command
             $areaName = strtoupper(basename($areaPath));
             $area = Area::firstOrCreate(
                 ['code' => $areaName, 'source_type' => 'msg'],
-                ['name' => $areaName, 'sort_order' => 0],
+                ['name' => $areaName, 'source_sort_order' => 0],
             );
 
             $count = $importer->import($areaPath, $area);

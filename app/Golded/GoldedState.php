@@ -66,11 +66,11 @@ class GoldedState
                             .' ELSE '.$typeOrder->count().' END'
                         )
                         : null,
-                    'G' => $query->orderBy('group_id'),
+                    'G' => $query->orderBy('source_group_code'),
                     'Y' => $query->orderByRaw('CASE WHEN unread_count > 0 THEN 0 ELSE 1 END'),
                     'U' => $query->orderByDesc('unread_count'),
                     'E' => $query->orderBy('echoid'),
-                    'O' => $query->orderBy('sort_order'),
+                    'O' => $query->orderBy('source_sort_order'),
                     'N' => $query->orderBy('name'),
                     default => null,
                 };
@@ -600,7 +600,7 @@ class GoldedState
                     ? str_pad((string) ($area->unread_count ?? 0), 5, ' ', STR_PAD_LEFT)
                     : '    -';
                 $echo = mb_str_pad(mb_substr((string) ($area->echoid ?? ''), 0, 16), 16);
-                $grp = mb_substr((string) ($area->group_id ?? ' '), 0, 1);
+                $grp = mb_substr((string) ($area->source_group_code ?? ' '), 0, 1);
 
                 $rows[] = $this->row([
                     [$num, $c],

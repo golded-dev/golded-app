@@ -16,6 +16,7 @@ class SquishImporter
 
     public function __construct(
         private readonly SquishReader $reader = new SquishReader,
+        private readonly MessageImportRecordMapper $mapper = new MessageImportRecordMapper,
     ) {}
 
     /**
@@ -28,7 +29,7 @@ class SquishImporter
             $areaName = strtoupper(basename($basePath));
             $area = Area::firstOrCreate(
                 ['code' => $areaName, 'source_type' => 'squish'],
-                ['name' => $areaName, 'sort_order' => 0],
+                ['name' => $areaName, 'source_sort_order' => 0],
             );
             $this->applyAreaDefMeta($area, $basePath);
         }
@@ -59,21 +60,6 @@ class SquishImporter
      */
     private function recordFor(ParsedMessage $message, Area $area): array
     {
-        return [
-            'area_id' => $area->id,
-            'msgno' => $message->msgno,
-            'external_id' => $message->externalId,
-            'from_name' => $message->fromName,
-            'to_name' => $message->toName,
-            'subject' => $message->subject,
-            'body_text' => $message->bodyText,
-            'attributes_raw' => $message->attributesRaw,
-            'reply_to_msgno' => $message->replyToMsgno,
-            'reply1st_msgno' => $message->reply1stMsgno,
-            'replynext_msgno' => $message->replyNextMsgno,
-            'posted_at' => $message->postedAt,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
+        return $this->mapper->map($message, $area, 'squish');
     }
 }

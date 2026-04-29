@@ -99,6 +99,22 @@ it('uses the MSGID kludge as external_id when present in Squish message', functi
     expect(Message::where('external_id', 'not like', 'hash:%')->count())->toBeGreaterThan(0);
 });
 
+it('stores Squish source identity and provenance', function (): void {
+    (new SquishImporter)->import(squishTestBase());
+
+    $message = Message::first();
+
+    expect($message->source_type)->toBe('squish')
+        ->and($message->source_uid)->toBe('squish:offset:256')
+        ->and($message->source_offset)->toBe(256)
+        ->and($message->source_locator)->toEndWith('/stest1.sqd')
+        ->and($message->control_lines_json)->toHaveKey('msgid')
+        ->and($message->provenance_json)->toMatchArray([
+            'source_type' => 'squish',
+            'source_offset' => 256,
+        ]);
+});
+
 it('message_count reflects total messages in area after re-import', function (): void {
     (new SquishImporter)->import(squishTestBase());
     $area = Area::first();

@@ -15,6 +15,7 @@ class HudsonImporter
 
     public function __construct(
         private readonly HudsonReader $reader = new HudsonReader,
+        private readonly MessageImportRecordMapper $mapper = new MessageImportRecordMapper,
     ) {}
 
     /**
@@ -25,28 +26,27 @@ class HudsonImporter
     {
         $areas = [];
         $records = [];
-        $count = 0;
+        $inserted = 0;
 
         foreach ($this->reader->read($basePath) as $message) {
             $area = $this->areaFor($message, $areas);
             $records[] = $this->recordFor($message, $area);
-            $count++;
 
             if (count($records) >= 500) {
-                Message::insertOrIgnore($records);
+                $inserted += Message::insertOrIgnore($records);
                 $records = [];
             }
         }
 
         if ($records !== []) {
-            Message::insertOrIgnore($records);
+            $inserted += Message::insertOrIgnore($records);
         }
 
         foreach ($areas as $area) {
             $area->update(['message_count' => Message::where('area_id', $area->id)->count()]);
         }
 
-        return $count;
+        return $inserted;
     }
 
     /**
@@ -59,7 +59,7 @@ class HudsonImporter
         if (! isset($areas[$areaCode])) {
             $areas[$areaCode] = Area::firstOrCreate(
                 ['code' => $areaCode, 'source_type' => 'hudson'],
-                ['name' => $message->areaName ?? $areaCode, 'sort_order' => $message->areaSortOrder ?? 0],
+                ['name' => $message->areaName ?? $areaCode, 'source_sort_order' => $message->areaSortOrder ?? 0],
             );
             $this->applyAreaDefMeta($areas[$areaCode], $message->areaMetaKey ?? strtolower($areaCode));
         }
@@ -72,24 +72,6 @@ class HudsonImporter
      */
     private function recordFor(ParsedMessage $message, Area $area): array
     {
-        $externalId = $message->externalId
-            ?? $this->syntheticId($message->fromName, $message->toName, $message->subject, $message->postedAt?->format(DATE_ATOM), $message->bodyText);
-
-        return [
-            'area_id' => $area->id,
-            'msgno' => $message->msgno,
-            'external_id' => $externalId,
-            'from_name' => $message->fromName,
-            'to_name' => $message->toName,
-            'subject' => $message->subject,
-            'body_text' => $message->bodyText,
-            'attributes_raw' => $message->attributesRaw,
-            'reply_to_msgno' => $message->replyToMsgno,
-            'reply1st_msgno' => $message->reply1stMsgno,
-            'replynext_msgno' => $message->replyNextMsgno,
-            'posted_at' => $message->postedAt,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
+        return $this->mapper->map($message, $area, 'hudson');
     }
 }

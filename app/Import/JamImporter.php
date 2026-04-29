@@ -16,6 +16,7 @@ class JamImporter
 
     public function __construct(
         private readonly JamReader $reader = new JamReader,
+        private readonly MessageImportRecordMapper $mapper = new MessageImportRecordMapper,
     ) {}
 
     /**
@@ -28,7 +29,7 @@ class JamImporter
             $areaName = strtoupper(basename($basePath));
             $area = Area::firstOrCreate(
                 ['code' => $areaName, 'source_type' => 'jam'],
-                ['name' => $areaName, 'sort_order' => 0],
+                ['name' => $areaName, 'source_sort_order' => 0],
             );
             $this->applyAreaDefMeta($area, $basePath);
         }
@@ -59,23 +60,6 @@ class JamImporter
      */
     private function recordFor(ParsedMessage $message, Area $area): array
     {
-        return [
-            'area_id' => $area->id,
-            'msgno' => $message->msgno,
-            'external_id' => $message->externalId,
-            'from_name' => $message->fromName,
-            'from_address' => $message->fromAddress,
-            'to_name' => $message->toName,
-            'to_address' => $message->toAddress,
-            'subject' => $message->subject,
-            'body_text' => $message->bodyText,
-            'attributes_raw' => $message->attributesRaw,
-            'reply_to_msgno' => $message->replyToMsgno,
-            'reply1st_msgno' => $message->reply1stMsgno,
-            'replynext_msgno' => $message->replyNextMsgno,
-            'posted_at' => $message->postedAt,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
+        return $this->mapper->map($message, $area, 'jam');
     }
 }

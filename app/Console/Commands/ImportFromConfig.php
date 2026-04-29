@@ -37,14 +37,13 @@ class ImportFromConfig extends Command
             $sourceType = $format === 'opus' ? 'msg' : $format;
 
             $area = Area::firstOrCreate(
-                ['code' => strtoupper((string) $def['echoid'])],
+                ['code' => strtoupper((string) $def['echoid']), 'source_type' => $sourceType],
                 [
                     'name' => $def['description'] ?? $def['echoid'],
                     'echoid' => $def['echoid'],
-                    'group_id' => $def['group_id'] ?? null,
+                    'source_group_code' => $def['group_id'] ?? null,
                     'area_type' => $def['area_type'] ?? null,
-                    'source_type' => $sourceType,
-                    'sort_order' => 0,
+                    'source_sort_order' => 0,
                 ],
             );
 

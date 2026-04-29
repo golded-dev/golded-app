@@ -88,6 +88,36 @@ it('creates separate areas for each board', function (): void {
     expect(Area::where('source_type', 'hudson')->count())->toBe(1);
 });
 
+it('stores Hudson source identity and provenance', function (): void {
+    (new HudsonImporter)->import(hudsonTestBase());
+
+    $message = Message::first();
+
+    expect($message->source_type)->toBe('hudson')
+        ->and($message->source_uid)->toBe('hudson:offset:0:source-id:42')
+        ->and($message->source_offset)->toBe(0)
+        ->and($message->source_locator)->toEndWith('/MSGTXT.BBS')
+        ->and($message->control_lines_json)->toHaveKey('msgid')
+        ->and($message->provenance_json)->toMatchArray([
+            'source_type' => 'hudson',
+            'source_id' => '42',
+            'source_offset' => 0,
+        ]);
+});
+
+it('re-importing the same Hudson base is idempotent', function (): void {
+    $path = hudsonTestBase();
+
+    $firstImportCount = (new HudsonImporter)->import($path);
+    $count = Message::count();
+    $secondImportCount = (new HudsonImporter)->import($path);
+
+    expect($firstImportCount)->toBe($count)
+        ->and($secondImportCount)->toBe(0)
+        ->and(Message::count())->toBe($count)
+        ->and(Area::first()->message_count)->toBe($count);
+});
+
 // ── Artisan command ───────────────────────────────────────────────────────────
 
 it('imports a Hudson area via artisan command', function (): void {
