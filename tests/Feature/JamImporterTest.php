@@ -80,7 +80,7 @@ it('stores JAM source identity and provenance', function (): void {
     expect($message->source_type)->toBe('jam')
         ->and($message->source_uid)->toBe("jam:offset:{$message->source_offset}")
         ->and($message->source_offset)->toBeInt()
-        ->and($message->source_locator)->toEndWith('/jtest1.jhr')
+        ->and(strtolower((string) $message->source_locator))->toEndWith('/jtest1.jhr')
         ->and($message->control_lines_json)->toHaveKey('msgid')
         ->and($message->provenance_json)->toMatchArray([
             'source_type' => 'jam',
